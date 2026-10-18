@@ -3,7 +3,7 @@
             <!-- Banner -->
             <div class="relative bg-dark overflow-hidden">
                 <div class="absolute inset-0">
-                    <img src="https://images.unsplash.com/photo-1531297172867-4f40f09805d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" alt="Banner" class="w-full h-full object-cover opacity-40">
+                    <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" alt="Banner" class="w-full h-full object-cover opacity-40">
                     <div class="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent"></div>
                 </div>
                 <div class="relative container mx-auto px-4 lg:px-8 py-24 lg:py-32 flex items-center">
@@ -39,6 +39,133 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Danh mục theo hãng -->
+            <div class="container mx-auto px-4 lg:px-8 pb-12">
+                <div class="mb-6 border-b pb-4">
+                    <h2 class="text-2xl md:text-3xl font-bold text-dark mb-1">Mua Theo Hãng</h2>
+                    <p class="text-gray-600 text-sm">Chọn thương hiệu laptop bạn yêu thích</p>
+                </div>
+                <div id="home-brands" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4"></div>
+            </div>
+
+            <!-- Sản phẩm bán chạy -->
+            <div class="container mx-auto px-4 lg:px-8 pb-12">
+                <div class="flex justify-between items-end mb-6 border-b pb-4">
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-dark mb-1">Sản Phẩm Bán Chạy</h2>
+                        <p class="text-gray-600 text-sm">Những mẫu laptop được khách hàng chọn mua nhiều nhất</p>
+                    </div>
+                    <button onclick="goToBrand('all')" class="text-primary font-medium text-sm hover:underline flex items-center">
+                        Xem tất cả <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+                <div id="bestseller-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+            </div>
+
+            <!-- Bài viết mới nhất -->
+            <div class="container mx-auto px-4 lg:px-8 pb-16">
+                <div class="flex justify-between items-end mb-6 border-b pb-4">
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-dark mb-1">Bài Viết Mới Nhất</h2>
+                        <p class="text-gray-600 text-sm">Tư vấn, so sánh và mẹo hay về laptop</p>
+                    </div>
+                    <button onclick="navigate('blog')" class="text-primary font-medium text-sm hover:underline flex items-center">
+                        Xem tất cả <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+                <div id="home-articles" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+            </div>
+        </section>
+
+        <!-- TRANG GIỚI THIỆU -->
+        <section id="about" class="page-section">
+            <div class="relative bg-dark overflow-hidden">
+                <div class="absolute inset-0">
+                    <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1920&q=80" alt="" class="w-full h-full object-cover opacity-30">
+                </div>
+                <div class="relative container mx-auto px-4 lg:px-8 py-16 md:py-20 text-center">
+                    <h1 class="text-3xl md:text-5xl font-bold text-white mb-4">Về <span class="text-primary">TechNova</span></h1>
+                    <p class="text-gray-300 max-w-2xl mx-auto">Hệ thống bán lẻ laptop chính hãng, tư vấn đúng nhu cầu và đồng hành cùng bạn sau khi mua.</p>
+                </div>
+            </div>
+
+            <div class="container mx-auto px-4 lg:px-8 py-12 max-w-5xl">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center mb-14">
+                    <div>
+                        <h2 class="text-2xl font-bold text-dark mb-4">Câu chuyện của chúng tôi</h2>
+                        <p class="text-gray-600 leading-relaxed mb-3">TechNova ra đời với mong muốn giúp mọi người tìm được chiếc laptop phù hợp với nhu cầu học tập và công việc, thay vì chỉ chạy theo cấu hình hay giá rẻ.</p>
+                        <p class="text-gray-600 leading-relaxed">Chúng tôi kinh doanh các dòng laptop từ nhiều thương hiệu như Apple, Dell, Asus, Lenovo, HP, kèm theo tư vấn rõ ràng và chính sách bảo hành minh bạch.</p>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80" alt="Laptop" class="rounded-2xl shadow-md w-full object-cover h-64">
+                </div>
+
+                <h2 class="text-2xl font-bold text-dark mb-6 text-center">Giá trị cốt lõi</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-primary mx-auto mb-4 text-2xl"><i class="fa-solid fa-circle-check"></i></div>
+                        <h3 class="font-bold text-lg mb-2">Chính hãng</h3>
+                        <p class="text-gray-500 text-sm">Sản phẩm có nguồn gốc rõ ràng, đầy đủ hoá đơn và phiếu bảo hành.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center text-green-500 mx-auto mb-4 text-2xl"><i class="fa-solid fa-headset"></i></div>
+                        <h3 class="font-bold text-lg mb-2">Tư vấn tận tâm</h3>
+                        <p class="text-gray-500 text-sm">Lắng nghe nhu cầu để gợi ý cấu hình vừa đủ, không bán thừa.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center text-purple-500 mx-auto mb-4 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+                        <h3 class="font-bold text-lg mb-2">Hậu mãi dài lâu</h3>
+                        <p class="text-gray-500 text-sm">Bảo hành 24 tháng, hỗ trợ kỹ thuật và đổi trả trong 30 ngày đầu.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                    <h2 class="text-2xl font-bold text-dark mb-4">Thông tin liên hệ</h2>
+                    <!-- TODO: thay bằng thông tin thật của cửa hàng -->
+                    <ul class="space-y-3 text-gray-600 text-sm">
+                        <li class="flex items-start"><i class="fa-solid fa-location-dot text-primary w-6 mt-0.5"></i><span>Địa chỉ cửa hàng: (cập nhật địa chỉ)</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-phone text-primary w-6 mt-0.5"></i><span>Hotline: (cập nhật số điện thoại)</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-envelope text-primary w-6 mt-0.5"></i><span>Email: (cập nhật email)</span></li>
+                        <li class="flex items-start"><i class="fa-regular fa-clock text-primary w-6 mt-0.5"></i><span>Giờ làm việc: 8:00 - 21:00 hằng ngày</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- DANH SÁCH BÀI VIẾT -->
+        <section id="blog" class="page-section py-12">
+            <div class="container mx-auto px-4 lg:px-8">
+                <div class="mb-8 border-b pb-4">
+                    <h2 class="text-3xl font-bold text-dark mb-2">Tin Tức &amp; Bài Viết</h2>
+                    <p class="text-gray-600">Kinh nghiệm chọn mua, so sánh và mẹo sử dụng laptop</p>
+                </div>
+                <div id="blog-categories" class="flex flex-wrap gap-2 mb-8"></div>
+                <div id="blog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+        </section>
+
+        <!-- CHI TIẾT BÀI VIẾT -->
+        <section id="article" class="page-section py-12">
+            <div class="container mx-auto px-4 lg:px-8 max-w-3xl">
+                <button onclick="navigate('blog')" class="text-gray-500 hover:text-primary mb-6 flex items-center text-sm font-medium">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Quay lại bài viết
+                </button>
+                <article class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <img id="article-img" src="" alt="" class="w-full h-64 md:h-80 object-cover">
+                    <div class="p-6 md:p-10">
+                        <span id="article-category" class="inline-block py-1 px-3 rounded-full bg-blue-50 text-primary font-semibold text-xs mb-3"></span>
+                        <h1 id="article-title" class="text-2xl md:text-4xl font-bold text-dark mb-4 leading-tight"></h1>
+                        <div class="flex items-center text-sm text-gray-500 mb-8 pb-6 border-b border-gray-100">
+                            <i class="fa-regular fa-user mr-2"></i><span id="article-author" class="mr-5"></span>
+                            <i class="fa-regular fa-calendar mr-2"></i><span id="article-date"></span>
+                        </div>
+                        <div id="article-content" class="space-y-4 text-gray-700 leading-relaxed"></div>
+                    </div>
+                </article>
+
+                <h3 class="text-xl font-bold text-dark mt-12 mb-4">Bài viết liên quan</h3>
+                <div id="article-related" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
+            </div>
         </section>
 
         <section id="products" class="page-section py-12">
@@ -49,6 +176,9 @@
                         <p class="text-gray-600">Đa dạng cấu hình, đáp ứng mọi nhu cầu</p>
                     </div>
                 </div>
+                <!-- Bộ lọc theo hãng (render bằng JS) -->
+                <div id="brand-filters" class="flex flex-wrap gap-2 mb-4"></div>
+                <p id="product-count" class="text-sm text-gray-500 mb-6"></p>
                 <!-- Vùng chứa danh sách sản phẩm sẽ được render bằng JS -->
                 <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
             </div>
@@ -67,6 +197,7 @@
                         </div>
                         <!-- Thông tin SP -->
                         <div class="flex flex-col">
+                            <span id="detail-brand" class="inline-block w-max py-1 px-3 rounded-full bg-blue-50 text-primary font-semibold text-xs mb-3"></span>
                             <h1 id="detail-name" class="text-3xl font-bold text-dark mb-3">Product Name</h1>
                             <div class="flex items-center space-x-2 mb-4 text-sm">
                                 <div class="text-yellow-400"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></div>

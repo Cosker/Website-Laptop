@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/../data/products.php'; ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -118,14 +119,25 @@
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3"></div>
 
     <script>
-        // Mock Data for Admin Products
-        const adminProducts = [
-            { id: 1, name: "MacBook Pro 14 M2 Pro", price: 45990000, stock: 12, status: "Còn hàng", img: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80" },
-            { id: 2, name: "Dell XPS 13 Plus 9320", price: 39500000, stock: 5, status: "Còn hàng", img: "https://images.unsplash.com/photo-1593642702821-c823b2816291?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80" },
-            { id: 3, name: "Asus ROG Strix G15", price: 28990000, stock: 0, status: "Hết hàng", img: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80" },
-            { id: 4, name: "Lenovo ThinkPad X1 Carbon Gen 10", price: 42000000, stock: 8, status: "Còn hàng", img: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80" },
-            { id: 5, name: "HP Envy x360 13", price: 22500000, stock: 24, status: "Còn hàng", img: "https://images.unsplash.com/photo-1531297172867-4f40f09805d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80" }
-        ];
+        // Dữ liệu lấy từ PHP (data/products.php), dùng chung với trang khách
+        const brands = <?= json_encode(getBrands(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        const adminProducts = <?= json_encode(getProducts(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+        // Ảnh dự phòng khi ảnh sản phẩm tải lỗi
+        const FALLBACK_IMG = '../assets/placeholder-laptop.svg';
+        document.addEventListener('error', (e) => {
+            const t = e.target;
+            if (t && t.tagName === 'IMG' && !t.dataset.fallback) {
+                t.dataset.fallback = '1';
+                t.src = FALLBACK_IMG;
+            }
+        }, true);
+
+        const escapeHtml = (str) => String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const brandName = (slug) => {
+            const b = brands.find(x => x.slug === slug);
+            return b ? b.short : slug;
+        };
 
         // Format Currency
         function formatCurrency(number) {
@@ -135,23 +147,31 @@
         // Render Product Table
         function renderAdminProducts() {
             const tbody = document.getElementById('admin-product-list');
-            tbody.innerHTML = '';
+            const keyword = (document.getElementById('admin-product-search').value || '').trim().toLowerCase();
+            const brand = document.getElementById('admin-brand-filter').value || 'all';
 
-            adminProducts.forEach(product => {
-                const statusClass = product.stock > 0 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800';
-                
-                tbody.innerHTML += `
+            const list = adminProducts.filter(p => {
+                const code = 'tn' + p.id.toString().padStart(4, '0');
+                const matchBrand = brand === 'all' || p.brand === brand;
+                const matchKeyword = !keyword || p.name.toLowerCase().includes(keyword) || code.includes(keyword);
+                return matchBrand && matchKeyword;
+            });
+
+            tbody.innerHTML = list.map(product => {
+                const inStock = product.stock > 0;
+                const statusClass = inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                const statusText = inStock ? 'Còn hàng' : 'Hết hàng';
+
+                return `
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 border border-gray-200 rounded overflow-hidden">
-                                    <img class="h-10 w-10 object-contain bg-white" src="${product.img}" alt="">
+                                    <img class="h-10 w-10 object-contain bg-white" src="${escapeHtml(product.img)}" alt="">
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">${product.name}</div>
-                                    <div class="text-xs text-gray-500">Mã: TN${product.id.toString().padStart(4, '0')}</div>
+                                    <div class="text-sm font-medium text-gray-900">${escapeHtml(product.name)}</div>
+                                    <div class="text-xs text-gray-500">Mã: TN${product.id.toString().padStart(4, '0')} &middot; ${escapeHtml(brandName(product.brand))}</div>
                                 </div>
                             </div>
                         </td>
@@ -163,7 +183,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                                ${product.status}
+                                ${statusText}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -172,7 +192,9 @@
                         </td>
                     </tr>
                 `;
-            });
+            }).join('') || '<tr><td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500">Không tìm thấy sản phẩm phù hợp.</td></tr>';
+
+            document.getElementById('admin-product-count').innerText = `Hiển thị ${list.length} / ${adminProducts.length} sản phẩm`;
         }
 
         // SPA Navigation for Admin

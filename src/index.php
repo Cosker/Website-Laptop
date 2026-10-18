@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/data/products.php';
+require_once __DIR__ . '/data/articles.php';
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -73,13 +77,22 @@
     <?php require_once 'includes/footer.php'; ?>
 
     <script>
-        // 1. DATA MOCKUP
-        const mockProducts = [
-            { id: 1, name: "MacBook Pro 14 M2 Pro", price: 45990000, img: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=500&q=80", spec: "Apple M2 Pro / 16GB RAM / 512GB SSD", desc: "Sức mạnh siêu việt từ chip M2 Pro giúp bạn xử lý mượt mà mọi tác vụ đồ hoạ nặng nhất." },
-            { id: 2, name: "Dell XPS 13 Plus 9320", price: 39500000, img: "https://images.unsplash.com/photo-1593642702821-c823b2816291?auto=format&fit=crop&w=500&q=80", spec: "Core i7-1280P / 16GB / 512GB", desc: "Thiết kế đến từ tương lai với thanh Touchbar ẩn và Trackpad vô cực tuyệt đẹp." },
-            { id: 3, name: "Asus ROG Strix G15", price: 28990000, img: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=500&q=80", spec: "Ryzen 7 6800H / RTX 3060 / 16GB", desc: "Cỗ máy chiến game hoàn hảo với hệ thống tản nhiệt thông minh và màn hình 165Hz." },
-            { id: 4, name: "Lenovo ThinkPad X1 Carbon", price: 42000000, img: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=500&q=80", spec: "Core i7-1260P / 16GB / 1TB", desc: "Đẳng cấp doanh nhân với độ bền đạt chuẩn quân đội, bàn phím gõ tốt nhất thế giới." }
-        ];
+        // 1. DATA (lấy từ PHP: data/products.php -- sau này đổi sang DB không cần sửa JS)
+        const brands = <?= json_encode(getBrands(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        const products = <?= json_encode(getProducts(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+        // Ảnh dự phòng: ảnh nào tải lỗi sẽ tự đổi sang ảnh này
+        const FALLBACK_IMG = 'assets/placeholder-laptop.svg';
+        document.addEventListener('error', (e) => {
+            const t = e.target;
+            if (t && t.tagName === 'IMG' && !t.dataset.fallback) {
+                t.dataset.fallback = '1';
+                t.src = FALLBACK_IMG;
+            }
+        }, true);
+
+        // Bài viết: dữ liệu lấy từ PHP (data/articles.php), sau này đổi sang DB không cần sửa JS
+        const articles = <?= json_encode(getArticles(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
         // 2. STATE VARIABLES
         let cart = JSON.parse(localStorage.getItem('technova_cart')) || [];
@@ -122,18 +135,97 @@
 
             if (pageId === 'detail' && param) renderProductDetail(param);
             else if (pageId === 'checkout') renderCheckout();
+            else if (pageId === 'article' && param) renderArticleDetail(param);
         }
 
-        function renderProducts() {
-            const container = document.getElementById('product-grid');
-            container.innerHTML = mockProducts.map(p => `
-                <div class="product-card bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col h-full cursor-pointer" onclick="navigate('detail', ${p.id})">
+        // 4b. ARTICLES (BÀI VIẾT)
+        let currentBlogCategory = 'Tất cả';
+
+        const escapeHtml = (str) => String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const formatDate = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('vi-VN');
+
+        function articleCardHTML(a) {
+            return `
+                <div class="product-card bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col h-full cursor-pointer" onclick="navigate('article', ${a.id})">
+                    <img src="${escapeHtml(a.img)}" alt="${escapeHtml(a.title)}" class="h-44 w-full object-cover">
+                    <div class="p-5 flex flex-col flex-grow">
+                        <span class="text-xs font-semibold text-primary mb-2">${escapeHtml(a.category)}</span>
+                        <h3 class="font-bold text-base text-dark mb-2 line-clamp-2 hover:text-primary transition-colors">${escapeHtml(a.title)}</h3>
+                        <p class="text-sm text-gray-500 mb-4 flex-grow line-clamp-3">${escapeHtml(a.excerpt)}</p>
+                        <div class="text-xs text-gray-400 flex items-center mt-auto"><i class="fa-regular fa-calendar mr-2"></i>${formatDate(a.created_at)}</div>
+                    </div>
+                </div>`;
+        }
+
+        function renderHomeArticles() {
+            const latest = [...articles].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 3);
+            document.getElementById('home-articles').innerHTML = latest.map(articleCardHTML).join('');
+        }
+
+        function renderBlog() {
+            const categories = ['Tất cả', ...new Set(articles.map(a => a.category))];
+            document.getElementById('blog-categories').innerHTML = categories.map(c => {
+                const active = c === currentBlogCategory;
+                const cls = active
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50';
+                return `<button onclick="filterBlog('${escapeHtml(c)}')" class="px-4 py-2 rounded-full text-sm font-medium border transition-colors ${cls}">${escapeHtml(c)}</button>`;
+            }).join('');
+
+            const list = articles
+                .filter(a => currentBlogCategory === 'Tất cả' || a.category === currentBlogCategory)
+                .sort((a, b) => b.created_at.localeCompare(a.created_at));
+            document.getElementById('blog-grid').innerHTML = list.length
+                ? list.map(articleCardHTML).join('')
+                : '<p class="text-gray-500 col-span-full text-center py-10">Chưa có bài viết nào trong mục này.</p>';
+        }
+
+        function filterBlog(category) {
+            currentBlogCategory = category;
+            renderBlog();
+        }
+
+        function renderArticleDetail(id) {
+            const a = articles.find(item => item.id === id);
+            if (!a) return;
+            const img = document.getElementById('article-img');
+            img.src = a.img;
+            img.alt = a.title;
+            document.getElementById('article-category').innerText = a.category;
+            document.getElementById('article-title').innerText = a.title;
+            document.getElementById('article-author').innerText = a.author;
+            document.getElementById('article-date').innerText = formatDate(a.created_at);
+            document.getElementById('article-content').innerHTML = a.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+
+            const related = articles.filter(x => x.id !== a.id)
+                .sort((x, y) => (y.category === a.category) - (x.category === a.category))
+                .slice(0, 2);
+            document.getElementById('article-related').innerHTML = related.map(articleCardHTML).join('');
+        }
+
+        // PRODUCTS (SẢN PHẨM) & PHÂN LOẠI THEO HÃNG
+        let currentBrand = 'all';
+
+        function brandName(slug) {
+            const b = brands.find(x => x.slug === slug);
+            return b ? b.short : slug;
+        }
+
+        function productCardHTML(p, badge = '') {
+            const outOfStock = p.stock <= 0;
+            let tag = '';
+            if (outOfStock) tag = '<span class="absolute top-3 left-3 z-10 bg-gray-800 text-white text-xs font-semibold px-2.5 py-1 rounded-full">Hết hàng</span>';
+            else if (badge) tag = `<span class="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full">${escapeHtml(badge)}</span>`;
+            return `
+                <div class="product-card relative bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col h-full cursor-pointer" onclick="navigate('detail', ${p.id})">
+                    ${tag}
                     <div class="block h-48 overflow-hidden bg-white p-6 border-b border-gray-50 flex items-center justify-center group">
-                        <img src="${p.img}" alt="${p.name}" class="object-contain h-full w-full group-hover:scale-110 transition-transform duration-300">
+                        <img src="${escapeHtml(p.img)}" alt="${escapeHtml(p.name)}" class="object-contain h-full w-full group-hover:scale-110 transition-transform duration-300">
                     </div>
                     <div class="p-5 flex flex-col flex-grow">
-                        <h3 class="font-bold text-base text-dark mb-1 line-clamp-2 hover:text-primary transition-colors">${p.name}</h3>
-                        <p class="text-xs text-gray-500 mb-4 flex-grow line-clamp-2">${p.spec}</p>
+                        <span class="text-xs font-semibold text-primary mb-1">${escapeHtml(brandName(p.brand))}</span>
+                        <h3 class="font-bold text-base text-dark mb-1 line-clamp-2 hover:text-primary transition-colors">${escapeHtml(p.name)}</h3>
+                        <p class="text-xs text-gray-500 mb-4 flex-grow line-clamp-2">${escapeHtml(p.spec)}</p>
                         <div class="flex items-center justify-between mt-auto">
                             <span class="text-primary font-bold text-lg">${formatCurrency(p.price)}</span>
                             <button onclick="event.stopPropagation(); addToCart(${p.id})" class="bg-gray-50 hover:bg-primary hover:text-white text-gray-700 w-10 h-10 rounded-full flex items-center justify-center transition-colors border border-gray-200 hover:border-primary">
@@ -142,18 +234,69 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+        }
+
+        function renderBrandFilters() {
+            const chip = (slug, label, count) => {
+                const active = slug === currentBrand;
+                const cls = active
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50';
+                return `<button onclick="filterBrand('${slug}')" class="px-4 py-2 rounded-full text-sm font-medium border transition-colors ${cls}">${escapeHtml(label)} <span class="${active ? 'text-blue-100' : 'text-gray-400'}">(${count})</span></button>`;
+            };
+            document.getElementById('brand-filters').innerHTML =
+                chip('all', 'Tất cả', products.length) +
+                brands.map(b => chip(b.slug, b.short, products.filter(p => p.brand === b.slug).length)).join('');
+        }
+
+        function filterBrand(slug) {
+            currentBrand = slug;
+            renderBrandFilters();
+            renderProducts();
+        }
+
+        // Từ trang chủ bấm vào hãng -> sang trang Sản phẩm đã lọc theo hãng đó
+        function goToBrand(slug) {
+            filterBrand(slug);
+            navigate('products');
+        }
+
+        function renderHomeBrands() {
+            document.getElementById('home-brands').innerHTML = brands.map(b => {
+                const count = products.filter(p => p.brand === b.slug).length;
+                return `
+                    <div onclick="goToBrand('${b.slug}')" class="product-card bg-white rounded-xl border border-gray-100 p-5 text-center cursor-pointer">
+                        <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-primary mx-auto mb-3 text-xl"><i class="fa-solid fa-laptop"></i></div>
+                        <h3 class="font-bold text-dark">${escapeHtml(b.short)}</h3>
+                        <p class="text-xs text-gray-500 mt-1">${count} sản phẩm</p>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderBestSellers() {
+            const top = [...products].sort((a, b) => b.sold - a.sold).slice(0, 4);
+            document.getElementById('bestseller-grid').innerHTML = top.map(p => productCardHTML(p, 'Bán chạy')).join('');
+        }
+
+        function renderProducts() {
+            const list = currentBrand === 'all' ? products : products.filter(p => p.brand === currentBrand);
+            const label = currentBrand === 'all' ? 'tất cả các hãng' : brandName(currentBrand);
+            document.getElementById('product-count').innerText = `Hiển thị ${list.length} sản phẩm - ${label}`;
+            document.getElementById('product-grid').innerHTML = list.length
+                ? list.map(p => productCardHTML(p)).join('')
+                : '<p class="text-gray-500 col-span-full text-center py-10">Chưa có sản phẩm nào của hãng này.</p>';
         }
 
         function renderProductDetail(id) {
-            const p = mockProducts.find(item => item.id === id);
+            const p = products.find(item => item.id === id);
             if(!p) return;
             document.getElementById('detail-img').src = p.img;
+            document.getElementById('detail-brand').innerText = brandName(p.brand);
             document.getElementById('detail-name').innerText = p.name;
             document.getElementById('detail-price').innerText = formatCurrency(p.price);
             document.getElementById('detail-spec').innerText = p.spec;
             document.getElementById('detail-desc').innerText = p.desc;
-            
             document.getElementById('btn-add-cart').onclick = () => addToCart(p.id);
             document.getElementById('btn-buy-now').onclick = () => buyNow(p.id);
         }
@@ -211,7 +354,11 @@
                 navigate('login');
                 return;
             }
-            const product = mockProducts.find(p => p.id === id);
+            const product = products.find(p => p.id === id);
+            if (product.stock <= 0) {
+                showModal('Hết hàng', `${product.name} hiện đã hết hàng.`, 'error');
+                return;
+            }
             const existing = cart.find(i => i.id === id);
             if (existing) { existing.quantity++; } 
             else { cart.push({ ...product, quantity: 1 }); }
@@ -272,7 +419,11 @@
 
         // 7. CHECKOUT LOGIC
         function buyNow(id) {
-            const product = mockProducts.find(p => p.id === id);
+            const product = products.find(p => p.id === id);
+            if (product.stock <= 0) {
+                showModal('Hết hàng', `${product.name} hiện đã hết hàng.`, 'error');
+                return;
+            }
             buyNowItem = { ...product, quantity: 1 };
             checkoutType = 'buy_now'; // Chỉ định cờ là mua ngay 1 sản phẩm
             navigate('checkout');
@@ -338,7 +489,12 @@
 
         // INIT
         window.onload = () => {
+            renderBrandFilters();
             renderProducts();
+            renderHomeBrands();
+            renderBestSellers();
+            renderHomeArticles();
+            renderBlog();
             updateAuthUI();
             updateCartUI();
         };

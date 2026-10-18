@@ -13,14 +13,13 @@
                     <div class="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between gap-4">
                         <div class="relative max-w-xs w-full">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" placeholder="Tìm tên, mã SP..." class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                            <input id="admin-product-search" oninput="renderAdminProducts()" type="text" placeholder="Tìm tên, mã SP..." class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
                         </div>
-                        <select class="border border-gray-200 rounded-lg text-sm px-4 py-2 focus:outline-none focus:border-primary">
-                            <option>Tất cả danh mục</option>
-                            <option>Apple (MacBook)</option>
-                            <option>Dell</option>
-                            <option>Asus</option>
-                            <option>HP</option>
+                        <select id="admin-brand-filter" onchange="renderAdminProducts()" class="border border-gray-200 rounded-lg text-sm px-4 py-2 focus:outline-none focus:border-primary">
+                            <option value="all">Tất cả hãng</option>
+                            <?php foreach (getBrands() as $brand): ?>
+                                <option value="<?= htmlspecialchars($brand['slug']) ?>"><?= htmlspecialchars($brand['name']) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="overflow-x-auto">
@@ -40,14 +39,7 @@
                         </table>
                     </div>
                     <div class="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
-                        <span>Hiển thị 1 đến 5 của 120 sản phẩm</span>
-                        <div class="flex space-x-1">
-                            <button class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 cursor-not-allowed text-gray-400">Trước</button>
-                            <button class="px-3 py-1 bg-primary text-white border border-primary rounded">1</button>
-                            <button class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">2</button>
-                            <button class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">3</button>
-                            <button class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">Sau</button>
-                        </div>
+                        <span id="admin-product-count"></span>
                     </div>
                 </div>
             </section>

@@ -11,7 +11,9 @@
                 <nav class="hidden md:flex space-x-8">
                     <button onclick="navigate('home')" class="font-medium text-gray-600 hover:text-primary transition-colors">Trang chủ</button>
                     <button onclick="navigate('products')" class="font-medium text-gray-600 hover:text-primary transition-colors">Sản phẩm</button>
-                    <button onclick="showModal('Thông tin', 'Tính năng đang phát triển', 'info')" class="font-medium text-gray-600 hover:text-primary transition-colors">Liên hệ</button>
+                    <button onclick="navigate('blog')" class="font-medium text-gray-600 hover:text-primary transition-colors">Bài viết</button>
+                    <button onclick="navigate('about')" class="font-medium text-gray-600 hover:text-primary transition-colors">Giới thiệu</button>
+                    <button onclick="navigate('about')" class="font-medium text-gray-600 hover:text-primary transition-colors">Liên hệ</button>
                 </nav>
 
                 <!-- Actions -->
