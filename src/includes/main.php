@@ -123,9 +123,9 @@
                     <h2 class="text-2xl font-bold text-dark mb-4">Thông tin liên hệ</h2>
                     <!-- TODO: thay bằng thông tin thật của cửa hàng -->
                     <ul class="space-y-3 text-gray-600 text-sm">
-                        <li class="flex items-start"><i class="fa-solid fa-location-dot text-primary w-6 mt-0.5"></i><span>Địa chỉ cửa hàng: (cập nhật địa chỉ)</span></li>
-                        <li class="flex items-start"><i class="fa-solid fa-phone text-primary w-6 mt-0.5"></i><span>Hotline: (cập nhật số điện thoại)</span></li>
-                        <li class="flex items-start"><i class="fa-solid fa-envelope text-primary w-6 mt-0.5"></i><span>Email: (cập nhật email)</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-location-dot text-primary w-6 mt-0.5"></i><span>Địa chỉ cửa hàng: 166/40 Trần Văn Dư, Phường Tân Bình, TP.Hồ Chí Minh</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-phone text-primary w-6 mt-0.5"></i><span>Hotline: 19002331</span></li>
+                        <li class="flex items-start"><i class="fa-solid fa-envelope text-primary w-6 mt-0.5"></i><span>Email: Technova@info.vn</span></li>
                         <li class="flex items-start"><i class="fa-regular fa-clock text-primary w-6 mt-0.5"></i><span>Giờ làm việc: 8:00 - 21:00 hằng ngày</span></li>
                     </ul>
                 </div>
