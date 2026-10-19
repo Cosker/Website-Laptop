@@ -55,7 +55,7 @@ function getProducts(): array
          'img' => $imgMacAir, 'spec' => 'Apple M2 / 8GB RAM / 256GB SSD',
          'desc' => 'Thiết kế mỏng nhẹ, pin dùng cả ngày, phù hợp sinh viên và dân văn phòng cần máy gọn.'],
         ['id' => 7,  'brand' => 'apple',  'name' => 'MacBook Pro 16 M2 Max',           'price' => 79990000, 'stock' => 4,  'sold' => 18,
-         'img' => $imgCode, 'spec' => 'Apple M2 Max / 32GB RAM / 1TB SSD',
+         'img' => $imgDesk, 'spec' => 'Apple M2 Max / 32GB RAM / 1TB SSD',
          'desc' => 'Màn hình lớn, hiệu năng cực mạnh cho dựng video, 3D và lập trình các dự án nặng.'],
 
         // ---------- DELL ----------
@@ -88,7 +88,7 @@ function getProducts(): array
          'img' => $imgDesk, 'spec' => 'Ryzen 5 7530U / 16GB / 512GB SSD',
          'desc' => 'Vỏ kim loại gọn nhẹ, cấu hình cân bằng giữa hiệu năng và thời lượng pin.'],
         ['id' => 13, 'brand' => 'lenovo', 'name' => 'Lenovo Legion 5',                 'price' => 31990000, 'stock' => 9,  'sold' => 58,
-         'img' => $imgCode, 'spec' => 'Ryzen 7 6800H / RTX 3060 / 16GB / 512GB',
+         'img' => $imgGeneric, 'spec' => 'Ryzen 7 6800H / RTX 3060 / 16GB / 512GB',
          'desc' => 'Laptop gaming nổi tiếng về tản nhiệt tốt và bàn phím gõ thoải mái.'],
 
         // ---------- HP ----------
@@ -121,8 +121,25 @@ function getProducts(): array
          'img' => $imgCode, 'spec' => 'Core i7-12700H / RTX 3060 / 16GB / 512GB',
          'desc' => 'Dòng gaming mạnh mẽ với thiết kế góc cạnh và hệ thống tản nhiệt hiệu quả.'],
         ['id' => 21, 'brand' => 'msi',    'name' => 'MSI Thin GF63',                   'price' => 17990000, 'stock' => 13, 'sold' => 77,
-         'img' => $imgHp, 'spec' => 'Core i5-12450H / RTX 3050 / 8GB / 512GB',
+         'img' => $imgDell, 'spec' => 'Core i5-12450H / RTX 3050 / 8GB / 512GB',
          'desc' => 'Laptop gaming mỏng nhẹ, giá hợp lý cho người mới bắt đầu chơi game.'],
+
+        // ---------- SẢN PHẨM BỔ SUNG ----------
+        ['id' => 22, 'brand' => 'asus',   'name' => 'Asus TUF Gaming A15',              'price' => 24990000, 'stock' => 16, 'sold' => 44,
+         'img' => 'assets/images/asus-tuf-a15.svg', 'spec' => 'Ryzen 7 7735HS / RTX 4050 / 16GB / 512GB SSD',
+         'desc' => 'Laptop gaming bền bỉ, card đồ họa RTX 4050 phù hợp chơi game và làm đồ họa.'],
+        ['id' => 23, 'brand' => 'lenovo', 'name' => 'Lenovo LOQ 15',                    'price' => 25990000, 'stock' => 12, 'sold' => 39,
+         'img' => 'assets/images/lenovo-loq-15.svg', 'spec' => 'Core i5-12450HX / RTX 4050 / 16GB / 512GB SSD',
+         'desc' => 'Laptop gaming hiệu năng tốt, thiết kế tối giản cho học tập và giải trí.'],
+        ['id' => 24, 'brand' => 'hp',     'name' => 'HP 14s',                           'price' => 11990000, 'stock' => 28, 'sold' => 91,
+         'img' => 'assets/images/hp-14s.svg', 'spec' => 'Core i3-1215U / 8GB / 256GB SSD',
+         'desc' => 'Laptop gọn nhẹ, tiết kiệm chi phí, phù hợp học online và công việc văn phòng.'],
+        ['id' => 25, 'brand' => 'acer',   'name' => 'Acer Swift Go 14',                 'price' => 19990000, 'stock' => 17, 'sold' => 36,
+         'img' => 'assets/images/acer-swift-go-14.svg', 'spec' => 'Core Ultra 5 / 16GB / 512GB SSD / OLED',
+         'desc' => 'Màn hình OLED sắc nét, thiết kế mỏng nhẹ cho người thường xuyên di chuyển.'],
+        ['id' => 26, 'brand' => 'msi',    'name' => 'MSI Cyborg 15',                    'price' => 26990000, 'stock' => 8,  'sold' => 27,
+         'img' => 'assets/images/msi-cyborg-15.svg', 'spec' => 'Core i7-13620H / RTX 4050 / 16GB / 512GB SSD',
+         'desc' => 'Laptop gaming thiết kế cá tính, hiệu năng mạnh cho game và tác vụ sáng tạo.'],
     ];
 }
 

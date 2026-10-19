@@ -144,6 +144,11 @@
             return number.toLocaleString('vi-VN') + ' ₫';
         }
 
+        // Đường dẫn ảnh khi trang quản trị nằm trong thư mục /admin.
+        function adminAssetUrl(path) {
+            return typeof path === 'string' && path.startsWith('assets/') ? '../' + path : path;
+        }
+
         // Render Product Table
         function renderAdminProducts() {
             const tbody = document.getElementById('admin-product-list');
@@ -167,7 +172,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 border border-gray-200 rounded overflow-hidden">
-                                    <img class="h-10 w-10 object-contain bg-white" src="${escapeHtml(product.img)}" alt="">
+                                    <img class="h-10 w-10 object-contain bg-white" src="${escapeHtml(adminAssetUrl(product.img))}" alt="">
                                 </div>
                                 <div class="ml-4">
                                     <div class="text-sm font-medium text-gray-900">${escapeHtml(product.name)}</div>

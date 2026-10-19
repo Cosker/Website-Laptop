@@ -176,6 +176,16 @@
                         <p class="text-gray-600">Đa dạng cấu hình, đáp ứng mọi nhu cầu</p>
                     </div>
                 </div>
+                <!-- Tìm kiếm sản phẩm -->
+                <div class="mb-5 max-w-xl">
+                    <label for="product-search" class="block text-sm font-medium text-gray-700 mb-2">Tìm laptop theo tên hoặc cấu hình</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input id="product-search" type="search" oninput="searchProducts(this.value)"
+                               placeholder="Ví dụ: MacBook, Dell, Core i7..."
+                               class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-white">
+                    </div>
+                </div>
                 <!-- Bộ lọc theo hãng (render bằng JS) -->
                 <div id="brand-filters" class="flex flex-wrap gap-2 mb-4"></div>
                 <p id="product-count" class="text-sm text-gray-500 mb-6"></p>
@@ -237,21 +247,21 @@
                             <h3 class="text-xl font-bold mb-4 flex items-center text-dark"><i class="fa-solid fa-location-dot text-primary mr-2"></i> 1. Thông tin nhận hàng</h3>
                             <form id="checkout-form" class="space-y-4">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label class="block text-sm text-gray-600 mb-1">Họ tên</label><input type="text" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
-                                    <div><label class="block text-sm text-gray-600 mb-1">Số điện thoại</label><input type="tel" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
+                                    <div><label class="block text-sm text-gray-600 mb-1">Họ tên</label><input name="receiver_name" id="checkout-name" type="text" required autocomplete="name" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
+                                    <div><label class="block text-sm text-gray-600 mb-1">Số điện thoại</label><input name="phone" id="checkout-phone" type="tel" required pattern="[0-9+() .-]{9,16}" autocomplete="tel" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
                                 </div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Địa chỉ chi tiết</label><input type="text" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
+                                <div><label class="block text-sm text-gray-600 mb-1">Địa chỉ chi tiết</label><input name="address" id="checkout-address" type="text" required autocomplete="street-address" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
                             </form>
                         </div>
                         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                             <h3 class="text-xl font-bold mb-4 flex items-center text-dark"><i class="fa-solid fa-credit-card text-primary mr-2"></i> 2. Phương thức thanh toán</h3>
                             <div class="space-y-3">
                                 <label class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 bg-blue-50/50 border-primary">
-                                    <input type="radio" name="payment" checked class="w-4 h-4 text-primary focus:ring-primary">
+                                    <input type="radio" name="payment" value="COD" checked class="w-4 h-4 text-primary focus:ring-primary">
                                     <span class="ml-3 font-medium">Thanh toán khi nhận hàng (COD)</span>
                                 </label>
                                 <label class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                    <input type="radio" name="payment" class="w-4 h-4 text-primary focus:ring-primary">
+                                    <input type="radio" name="payment" value="Chuyển khoản ngân hàng" class="w-4 h-4 text-primary focus:ring-primary">
                                     <span class="ml-3 font-medium">Chuyển khoản ngân hàng</span>
                                 </label>
                             </div>
@@ -278,6 +288,42 @@
             </div>
         </section>
 
+
+        <section id="account" class="page-section py-12">
+            <div class="container mx-auto px-4 lg:px-8 max-w-5xl">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-dark">Tài khoản của tôi</h2>
+                        <p class="text-gray-500 mt-1">Quản lý thông tin cá nhân và theo dõi đơn hàng</p>
+                    </div>
+                    <button onclick="handleLogout()" class="px-4 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 font-medium">
+                        <i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <h3 class="text-lg font-bold mb-5"><i class="fa-regular fa-user text-primary mr-2"></i>Thông tin cá nhân</h3>
+                        <form id="profile-form" onsubmit="saveProfile(event)" class="space-y-4">
+                            <div><label class="block text-sm text-gray-600 mb-1">Họ và tên</label><input id="profile-name" name="name" required class="w-full px-3 py-2.5 rounded-lg border border-gray-200 outline-none focus:border-primary"></div>
+                            <div><label class="block text-sm text-gray-600 mb-1">Email</label><input id="profile-email" type="email" disabled class="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-100 text-gray-500"></div>
+                            <div><label class="block text-sm text-gray-600 mb-1">Số điện thoại</label><input id="profile-phone" name="phone" type="tel" class="w-full px-3 py-2.5 rounded-lg border border-gray-200 outline-none focus:border-primary"></div>
+                            <div><label class="block text-sm text-gray-600 mb-1">Địa chỉ</label><textarea id="profile-address" name="address" rows="3" class="w-full px-3 py-2.5 rounded-lg border border-gray-200 outline-none focus:border-primary"></textarea></div>
+                            <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-semibold py-2.5 rounded-lg">Lưu thông tin</button>
+                        </form>
+                    </div>
+                    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <div class="flex items-center justify-between gap-3 mb-5">
+                            <h3 class="text-lg font-bold"><i class="fa-solid fa-box-open text-primary mr-2"></i>Lịch sử đơn hàng</h3>
+                            <span id="order-count" class="text-sm text-gray-500">0 đơn hàng</span>
+                        </div>
+                        <div id="order-history" class="space-y-4">
+                            <p class="text-gray-500 text-sm">Bạn chưa có đơn hàng nào.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="login" class="page-section py-20 bg-gray-50">
             <div class="container mx-auto px-4 flex justify-center">
                 <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-md">
@@ -288,14 +334,14 @@
                     <form onsubmit="handleLogin(event)" class="space-y-5">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="Nhập email của bạn">
+                            <input name="email" type="email" required autocomplete="email" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="Nhập email của bạn">
                         </div>
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label class="block text-sm font-medium text-gray-700">Mật khẩu</label>
                                 <a href="#" class="text-xs text-primary hover:underline">Quên mật khẩu?</a>
                             </div>
-                            <input type="password" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="••••••••">
+                            <input name="password" type="password" required autocomplete="current-password" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50 focus:bg-white transition-colors" placeholder="••••••••">
                         </div>
                         <button type="submit" class="w-full bg-dark hover:bg-black text-white font-bold py-3 rounded-lg transition-colors shadow-md">Đăng Nhập</button>
                     </form>
@@ -316,15 +362,15 @@
                     <form onsubmit="handleRegister(event)" class="space-y-5">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
-                            <input type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50" placeholder="Nguyễn Văn A">
+                            <input name="name" type="text" required minlength="2" autocomplete="name" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50" placeholder="Nguyễn Văn A">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50" placeholder="email@example.com">
+                            <input name="email" type="email" required autocomplete="email" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50" placeholder="email@example.com">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
-                            <input type="password" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50" placeholder="••••••••">
+                            <input name="password" type="password" required minlength="8" autocomplete="new-password" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-gray-50" placeholder="Tối thiểu 8 ký tự">
                         </div>
                         <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-bold py-3 rounded-lg transition-colors shadow-md">Đăng Ký</button>
                     </form>

@@ -97,6 +97,8 @@ require_once __DIR__ . '/data/articles.php';
         // 2. STATE VARIABLES
         let cart = JSON.parse(localStorage.getItem('technova_cart')) || [];
         let currentUser = JSON.parse(localStorage.getItem('technova_user')) || null;
+        let registeredUsers = JSON.parse(localStorage.getItem('technova_users')) || [];
+        let orders = JSON.parse(localStorage.getItem('technova_orders')) || [];
         let checkoutType = 'cart'; // 'cart' or 'buy_now'
         let buyNowItem = null;
 
@@ -136,6 +138,7 @@ require_once __DIR__ . '/data/articles.php';
             if (pageId === 'detail' && param) renderProductDetail(param);
             else if (pageId === 'checkout') renderCheckout();
             else if (pageId === 'article' && param) renderArticleDetail(param);
+            else if (pageId === 'account') renderAccount();
         }
 
         // 4b. ARTICLES (BÀI VIẾT)
@@ -205,6 +208,7 @@ require_once __DIR__ . '/data/articles.php';
 
         // PRODUCTS (SẢN PHẨM) & PHÂN LOẠI THEO HÃNG
         let currentBrand = 'all';
+        let currentSearch = '';
 
         function brandName(slug) {
             const b = brands.find(x => x.slug === slug);
@@ -279,13 +283,23 @@ require_once __DIR__ . '/data/articles.php';
             document.getElementById('bestseller-grid').innerHTML = top.map(p => productCardHTML(p, 'Bán chạy')).join('');
         }
 
+        function searchProducts(value) {
+            currentSearch = String(value || '').trim().toLocaleLowerCase('vi');
+            renderProducts();
+        }
+
         function renderProducts() {
-            const list = currentBrand === 'all' ? products : products.filter(p => p.brand === currentBrand);
+            let list = currentBrand === 'all' ? [...products] : products.filter(p => p.brand === currentBrand);
+            if (currentSearch) {
+                list = list.filter(p =>
+                    `${p.name} ${p.spec} ${p.desc} ${brandName(p.brand)}`.toLocaleLowerCase('vi').includes(currentSearch)
+                );
+            }
             const label = currentBrand === 'all' ? 'tất cả các hãng' : brandName(currentBrand);
             document.getElementById('product-count').innerText = `Hiển thị ${list.length} sản phẩm - ${label}`;
             document.getElementById('product-grid').innerHTML = list.length
                 ? list.map(p => productCardHTML(p)).join('')
-                : '<p class="text-gray-500 col-span-full text-center py-10">Chưa có sản phẩm nào của hãng này.</p>';
+                : '<p class="text-gray-500 col-span-full text-center py-10">Không tìm thấy sản phẩm phù hợp.</p>';
         }
 
         function renderProductDetail(id) {
@@ -301,13 +315,15 @@ require_once __DIR__ . '/data/articles.php';
             document.getElementById('btn-buy-now').onclick = () => buyNow(p.id);
         }
 
-        // 5. AUTHENTICATION
+        // 5. AUTHENTICATION & TÀI KHOẢN
         function updateAuthUI() {
             const authButtons = document.getElementById('auth-buttons');
             if (currentUser) {
                 authButtons.innerHTML = `
-                    <span class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full"><i class="fa-regular fa-user mr-1"></i> Chào, ${currentUser.name}</span>
-                    <button onclick="handleLogout()" class="text-sm text-red-500 hover:underline ml-2 font-medium">Đăng xuất</button>
+                    <button onclick="navigate('account')" class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-blue-50 hover:text-primary">
+                        <i class="fa-regular fa-user mr-1"></i> ${escapeHtml(currentUser.name || 'Tài khoản')}
+                    </button>
+                    <button onclick="handleLogout()" class="text-sm text-red-500 hover:underline ml-1 font-medium">Đăng xuất</button>
                 `;
             } else {
                 authButtons.innerHTML = `
@@ -319,17 +335,46 @@ require_once __DIR__ . '/data/articles.php';
 
         function handleLogin(e) {
             e.preventDefault();
-            currentUser = { name: "Khách hàng" };
+            const form = e.currentTarget;
+            const email = form.elements.email.value.trim().toLowerCase();
+            const password = form.elements.password.value;
+            const user = registeredUsers.find(u => u.email.toLowerCase() === email && u.password === password);
+
+            if (!user) {
+                showModal('Đăng nhập thất bại', 'Email hoặc mật khẩu không đúng. Nếu chưa có tài khoản, hãy đăng ký trước.', 'error');
+                return;
+            }
+
+            currentUser = { name: user.name, email: user.email, phone: user.phone || '', address: user.address || '' };
             localStorage.setItem('technova_user', JSON.stringify(currentUser));
             updateAuthUI();
-            showModal('Thành công', 'Đăng nhập thành công!', 'success');
+            showModal('Thành công', `Xin chào ${currentUser.name}!`, 'success');
             navigate('home');
         }
 
         function handleRegister(e) {
             e.preventDefault();
-            showModal('Thành công', 'Đăng ký tài khoản thành công! Vui lòng đăng nhập.', 'success');
+            const form = e.currentTarget;
+            const name = form.elements.name.value.trim();
+            const email = form.elements.email.value.trim().toLowerCase();
+            const password = form.elements.password.value;
+
+            if (password.length < 8) {
+                showModal('Mật khẩu chưa hợp lệ', 'Mật khẩu cần có ít nhất 8 ký tự.', 'error');
+                return;
+            }
+            if (registeredUsers.some(u => u.email.toLowerCase() === email)) {
+                showModal('Email đã tồn tại', 'Email này đã được đăng ký. Hãy đăng nhập hoặc sử dụng email khác.', 'error');
+                return;
+            }
+
+            registeredUsers.push({ name, email, password, phone: '', address: '', createdAt: new Date().toISOString() });
+            localStorage.setItem('technova_users', JSON.stringify(registeredUsers));
+            form.reset();
             navigate('login');
+            const loginForm = document.querySelector('#login form');
+            if (loginForm) loginForm.elements.email.value = email;
+            showModal('Đăng ký thành công', 'Tài khoản đã được lưu trên trình duyệt. Hãy đăng nhập để tiếp tục.', 'success');
         }
 
         function handleLogout() {
@@ -338,6 +383,72 @@ require_once __DIR__ . '/data/articles.php';
             updateAuthUI();
             showModal('Thông báo', 'Bạn đã đăng xuất khỏi hệ thống.', 'info');
             navigate('home');
+        }
+
+        function renderAccount() {
+            if (!currentUser) {
+                showModal('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để xem tài khoản.', 'error');
+                navigate('login');
+                return;
+            }
+
+            document.getElementById('profile-name').value = currentUser.name || '';
+            document.getElementById('profile-email').value = currentUser.email || '';
+            document.getElementById('profile-phone').value = currentUser.phone || '';
+            document.getElementById('profile-address').value = currentUser.address || '';
+
+            const myOrders = orders.filter(order => order.email === currentUser.email);
+            document.getElementById('order-count').innerText = `${myOrders.length} đơn hàng`;
+            const history = document.getElementById('order-history');
+
+            if (!myOrders.length) {
+                history.innerHTML = `<div class="text-center py-10 text-gray-500"><i class="fa-solid fa-box-open text-3xl mb-3"></i><p>Bạn chưa có đơn hàng nào.</p><button onclick="navigate('products')" class="mt-4 text-primary font-semibold hover:underline">Khám phá sản phẩm</button></div>`;
+                return;
+            }
+
+            history.innerHTML = [...myOrders].reverse().map(order => `
+                <article class="border border-gray-200 rounded-xl p-4">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 border-b border-gray-100 pb-3 mb-3">
+                        <div>
+                            <p class="font-bold text-dark">Đơn hàng #${escapeHtml(order.id)}</p>
+                            <p class="text-xs text-gray-500 mt-1">${new Date(order.createdAt).toLocaleString('vi-VN')}</p>
+                        </div>
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700">${escapeHtml(order.status || 'Đang xử lý')}</span>
+                    </div>
+                    <div class="space-y-2">
+                        ${order.items.map(item => `
+                            <div class="flex items-center gap-3">
+                                <img src="${escapeHtml(item.img)}" alt="" class="w-12 h-12 object-contain bg-gray-50 rounded">
+                                <div class="flex-1 min-w-0"><p class="text-sm font-medium">${escapeHtml(item.name)}</p><p class="text-xs text-gray-500">Số lượng: ${item.quantity}</p></div>
+                                <span class="text-sm font-semibold">${formatCurrency(item.price * item.quantity)}</span>
+                            </div>`).join('')}
+                    </div>
+                    <div class="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center gap-3">
+                        <span class="text-sm text-gray-500">Thanh toán: ${escapeHtml(order.payment)}</span>
+                        <strong class="text-primary">${formatCurrency(order.total)}</strong>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function saveProfile(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const name = document.getElementById('profile-name').value.trim();
+            const phone = document.getElementById('profile-phone').value.trim();
+            const address = document.getElementById('profile-address').value.trim();
+            if (!name) {
+                showModal('Thiếu thông tin', 'Vui lòng nhập họ tên.', 'error');
+                return;
+            }
+
+            currentUser = { ...currentUser, name, phone, address };
+            localStorage.setItem('technova_user', JSON.stringify(currentUser));
+            registeredUsers = registeredUsers.map(user => user.email === currentUser.email
+                ? { ...user, name, phone, address } : user);
+            localStorage.setItem('technova_users', JSON.stringify(registeredUsers));
+            updateAuthUI();
+            showModal('Thành công', 'Đã cập nhật thông tin tài khoản.', 'success');
         }
 
         // 6. CART LOGIC
@@ -419,13 +530,18 @@ require_once __DIR__ . '/data/articles.php';
 
         // 7. CHECKOUT LOGIC
         function buyNow(id) {
+            if (!currentUser) {
+                showModal('Yêu cầu đăng nhập', 'Vui lòng đăng nhập trước khi mua hàng.', 'error');
+                navigate('login');
+                return;
+            }
             const product = products.find(p => p.id === id);
-            if (product.stock <= 0) {
-                showModal('Hết hàng', `${product.name} hiện đã hết hàng.`, 'error');
+            if (!product || product.stock <= 0) {
+                showModal('Hết hàng', `${product ? product.name : 'Sản phẩm'} hiện đã hết hàng.`, 'error');
                 return;
             }
             buyNowItem = { ...product, quantity: 1 };
-            checkoutType = 'buy_now'; // Chỉ định cờ là mua ngay 1 sản phẩm
+            checkoutType = 'buy_now';
             navigate('checkout');
         }
 
@@ -446,45 +562,93 @@ require_once __DIR__ . '/data/articles.php';
         }
 
         function renderCheckout() {
+            if (!currentUser) {
+                showModal('Yêu cầu đăng nhập', 'Vui lòng đăng nhập trước khi thanh toán.', 'error');
+                navigate('login');
+                return;
+            }
             const container = document.getElementById('checkout-items');
-            // Quyết định nguồn dữ liệu thanh toán dựa vào cờ checkoutType
-            const items = (checkoutType === 'buy_now') ? [buyNowItem] : cart;
+            const items = (checkoutType === 'buy_now') ? (buyNowItem ? [buyNowItem] : []) : cart;
+            if (!items.length) {
+                showModal('Giỏ hàng trống', 'Hãy thêm sản phẩm trước khi thanh toán.', 'error');
+                navigate('products');
+                return;
+            }
+            document.getElementById('checkout-name').value = currentUser.name || '';
+            document.getElementById('checkout-phone').value = currentUser.phone || '';
+            document.getElementById('checkout-address').value = currentUser.address || '';
             let total = 0;
-            
+
             container.innerHTML = items.map(item => {
                 total += item.price * item.quantity;
                 return `
                     <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                         <div class="flex items-center">
-                            <img src="${item.img}" class="w-12 h-12 object-contain bg-gray-50 rounded border border-gray-100 mr-3">
-                            <div><p class="text-sm font-medium line-clamp-1">${item.name}</p><p class="text-xs text-gray-500">SL: ${item.quantity}</p></div>
+                            <img src="${escapeHtml(item.img)}" alt="" class="w-12 h-12 object-contain bg-gray-50 rounded border border-gray-100 mr-3">
+                            <div><p class="text-sm font-medium line-clamp-1">${escapeHtml(item.name)}</p><p class="text-xs text-gray-500">SL: ${item.quantity}</p></div>
                         </div>
                         <span class="font-semibold text-sm">${formatCurrency(item.price * item.quantity)}</span>
                     </div>`;
             }).join('');
-            
+
             document.getElementById('checkout-subtotal').innerText = formatCurrency(total);
             document.getElementById('checkout-total').innerText = formatCurrency(total);
         }
 
         function processOrder() {
-            const form = document.getElementById('checkout-form');
-            if(!form.checkValidity()) {
-                showModal('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin nhận hàng!', 'error');
+            if (!currentUser) {
+                showModal('Yêu cầu đăng nhập', 'Vui lòng đăng nhập trước khi đặt hàng.', 'error');
+                navigate('login');
                 return;
             }
-            // Thành công
-            showModal('Đặt hàng thành công!', 'Cảm ơn bạn đã mua sắm. Đơn hàng sẽ sớm được giao.', 'success');
-            
-            // Nếu là thanh toán giỏ hàng thì xoá giỏ hàng sau khi đặt xong
+
+            const form = document.getElementById('checkout-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                showModal('Thiếu thông tin', 'Vui lòng kiểm tra đầy đủ họ tên, số điện thoại và địa chỉ nhận hàng.', 'error');
+                return;
+            }
+
+            const items = (checkoutType === 'buy_now') ? (buyNowItem ? [buyNowItem] : []) : [...cart];
+            if (!items.length) {
+                showModal('Giỏ hàng trống', 'Không có sản phẩm để đặt hàng.', 'error');
+                return;
+            }
+
+            const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const paymentInput = document.querySelector('input[name="payment"]:checked');
+            const order = {
+                id: 'TN' + Date.now().toString().slice(-8),
+                email: currentUser.email,
+                items: items.map(item => ({ id: item.id, name: item.name, img: item.img, price: item.price, quantity: item.quantity })),
+                total,
+                receiverName: form.elements.receiver_name.value.trim(),
+                phone: form.elements.phone.value.trim(),
+                address: form.elements.address.value.trim(),
+                payment: paymentInput ? paymentInput.value : 'COD',
+                status: 'Đang xử lý',
+                createdAt: new Date().toISOString()
+            };
+
+            orders.push(order);
+            localStorage.setItem('technova_orders', JSON.stringify(orders));
+
+            currentUser = { ...currentUser, name: order.receiverName, phone: order.phone, address: order.address };
+            localStorage.setItem('technova_user', JSON.stringify(currentUser));
+            registeredUsers = registeredUsers.map(user => user.email === currentUser.email
+                ? { ...user, name: currentUser.name, phone: currentUser.phone, address: currentUser.address } : user);
+            localStorage.setItem('technova_users', JSON.stringify(registeredUsers));
+
             if (checkoutType === 'cart') {
                 cart = [];
                 localStorage.setItem('technova_cart', JSON.stringify(cart));
                 updateCartUI();
             }
-            
+            buyNowItem = null;
             form.reset();
-            navigate('home');
+            updateAuthUI();
+            showModal('Đặt hàng thành công!', `Đơn hàng #${order.id} đã được lưu. Tổng tiền: ${formatCurrency(total)}. Bạn có thể theo dõi trong Tài khoản của tôi.`, 'success');
+            navigate('account');
         }
 
         // INIT
