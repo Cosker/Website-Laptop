@@ -91,7 +91,7 @@ require_once __DIR__ . '/data/articles.php';
             }
         }, true);
 
-        // Bài viết: dữ liệu lấy từ PHP (data/articles.php), sau này đổi sang DB không cần sửa JS
+        // Bài viết: lấy từ bảng articles trong DB (data/articles.php), quản lý ở trang admin
         const articles = <?= json_encode(getArticles(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
         // 2. STATE VARIABLES

@@ -96,6 +96,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
     }
+    // 6. THÊM / SỬA BÀI VIẾT
+    elseif ($action === 'add_article' || $action === 'edit_article') {
+        $id = (int)($_POST['id'] ?? 0);
+        $title = trim($_POST['title'] ?? '');
+        $category = trim($_POST['category'] ?? '');
+        $author = trim($_POST['author'] ?? '');
+        $excerpt = trim($_POST['excerpt'] ?? '');
+        // Chuẩn hoá xuống dòng, bỏ dòng trống: mỗi dòng còn lại là 1 đoạn văn
+        $paragraphs = array_filter(array_map('trim', preg_split('/\R/u',$_POST['content'] ?? '')), 'strlen');
+        $content = implode("\n", $paragraphs);
+        $img = trim($_POST['img'] ?? '');
+        $created_at = $_POST['created_at'] ?? '';
+        $validDate = DateTime::createFromFormat('Y-m-d', $created_at) !== false;
+        $isEdit = $action === 'edit_article';
+
+        if (!empty($title) && !empty($category) && !empty($author) && !empty($excerpt) && !empty($content) && $validDate && (!$isEdit || $id > 0)) {
+            try {
+                if ($isEdit) {
+                    $stmt = $pdo->prepare("UPDATE articles SET title = ?, category = ?, author = ?, excerpt = ?, content = ?, img = ?, created_at = ? WHERE id = ?");
+                    $stmt->execute([$title, $category, $author, $excerpt, $content, $img, $created_at, $id]);
+                    $toastMessage = "showToast('Cập nhật bài viết thành công!', 'success');";
+                } else {
+                    $stmt = $pdo->prepare("INSERT INTO articles (title, category, author, excerpt, content, img, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$title, $category, $author, $excerpt, $content, $img, $created_at]);
+                    $toastMessage = "showToast('Thêm bài viết thành công!', 'success');";
+                }
+            } catch (PDOException $e) {
+                $toastMessage = "showToast('Lỗi khi lưu bài viết: " . addslashes($e->getMessage()) . "', 'error');";
+            }
+        } else {
+            $toastMessage = "showToast('Vui lòng điền đầy đủ thông tin bài viết!', 'error');";
+        }
+    }
+    // 7. XÓA BÀI VIẾT
+    elseif ($action === 'delete_article') {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM articles WHERE id = ?");
+                $stmt->execute([$id]);
+                $toastMessage = "showToast('Đã xóa bài viết thành công!', 'success');";
+            } catch (PDOException $e) {
+                $toastMessage = "showToast('Lỗi khi xóa: " . addslashes($e->getMessage()) . "', 'error');";
+            }
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -166,6 +212,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             <!-- CODE THÊM MỚI: Nhúng file Khách hàng vào layout -->
             <!-- SECTION: CUSTOMERS -->
             <?php require_once 'includes/customers.php'; ?>
+
+            <!-- SECTION: ARTICLES -->
+            <?php require_once 'includes/articles.php'; ?>
         </main>
     </div>
 
@@ -266,6 +315,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 navigateAdmin('orders');
                 <?php elseif (strpos($_POST['action'], 'customer') !== false): ?>
                 navigateAdmin('customers');
+                <?php elseif (strpos($_POST['action'], 'article') !== false): ?>
+                navigateAdmin('articles');
                 <?php endif; ?>
             }
         });

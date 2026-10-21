@@ -28,6 +28,10 @@
             <button onclick="navigateAdmin('customers')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors" data-target="customers">
                 <i class="fa-solid fa-users w-6 text-center mr-2"></i> Khách hàng
             </button>
+
+            <button onclick="navigateAdmin('articles')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors" data-target="articles">
+                <i class="fa-solid fa-newspaper w-6 text-center mr-2"></i> Bài viết
+            </button>
             
             <button onclick="showToast('Tính năng đang phát triển', 'info')" class="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors">
                 <i class="fa-solid fa-gear w-6 text-center mr-2"></i> Cài đặt
