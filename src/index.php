@@ -140,7 +140,14 @@ require_once __DIR__ . '/data/articles.php';
         }
 
         // 4. NAVIGATION & RENDERING
-        function navigate(pageId, param = null) {
+        // Mỗi lần chuyển mục được ghi vào lịch sử trình duyệt (#products, #detail/5, ...)
+        // để nút Back/Forward quay lại đúng mục trước đó thay vì thoát khỏi trang.
+        const pageHash = (pageId, param) => '#' + pageId + (param ? '/' + param : '');
+
+        function navigate(pageId, param = null, fromHistory = false) {
+            if (!fromHistory && location.hash !== pageHash(pageId, param)) {
+                history.pushState({ pageId, param }, '', pageHash(pageId, param));
+            }
             document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             window.scrollTo(0, 0);
@@ -813,7 +820,26 @@ require_once __DIR__ . '/data/articles.php';
             renderBlog();
             updateAuthUI();
             updateCartUI();
+            openPageFromHash();
         };
+
+        // Mở mục theo địa chỉ hiện tại (khi tải lại trang hoặc bấm Back/Forward).
+        // Trang thanh toán không mở lại trực tiếp vì cần giỏ hàng / sản phẩm đang mua.
+        const RESTORABLE_PAGES = ['home', 'products', 'blog', 'article', 'about', 'detail', 'account', 'login', 'register'];
+
+        function openPageFromHash() {
+            const [pageId, rawParam] = location.hash.slice(1).split('/');
+            const param = rawParam ? parseInt(rawParam, 10) : null;
+            if (RESTORABLE_PAGES.includes(pageId)) {
+                history.replaceState({ pageId, param }, '', pageHash(pageId, param));
+                navigate(pageId, param, true);
+            } else {
+                history.replaceState({ pageId: 'home', param: null }, '', location.pathname);
+                navigate('home', null, true);
+            }
+        }
+
+        window.addEventListener('popstate', openPageFromHash);
     </script>
 </body>
 </html>
