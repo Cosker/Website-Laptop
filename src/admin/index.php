@@ -1,4 +1,103 @@
-<?php require_once __DIR__ . '/../data/products.php'; ?>
+<?php
+require_once __DIR__ . '/../config/db.php';
+
+$toastMessage = '';
+
+// XỬ LÝ TẤT CẢ THAO TÁC POST (THÊM, SỬA, XÓA SẢN PHẨM) TRƯỚC KHI NẠP GIAO DIỆN
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+    // 1. THÊM SẢN PHẨM
+    if ($action === 'add_product') {
+        $name = trim($_POST['name'] ?? '');
+        $brand_id = (int)($_POST['brand_id'] ?? 0);
+        $price = (int)($_POST['price'] ?? 0);
+        $stock = (int)($_POST['stock'] ?? 0);
+        $img = trim($_POST['img'] ?? '');
+
+        if (!empty($name) && $brand_id > 0 && $price >= 0 && $stock >= 0) {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO products (brand_id, name, price, stock, img) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$brand_id, $name, $price, $stock, $img]);
+                $toastMessage = "showToast('Thêm sản phẩm thành công!', 'success');";
+            } catch (PDOException $e) {
+                $toastMessage = "showToast('Lỗi khi thêm sản phẩm: " . addslashes($e->getMessage()) . "', 'error');";
+            }
+        } else {
+            $toastMessage = "showToast('Vui lòng điền thông tin hợp lệ!', 'error');";
+        }
+    } 
+    // 2. SỬA SẢN PHẨM
+    elseif ($action === 'edit_product') {
+        $id = (int)($_POST['id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        $brand_id = (int)($_POST['brand_id'] ?? 0);
+        $price = (int)($_POST['price'] ?? 0);
+        $stock = (int)($_POST['stock'] ?? 0);
+        $img = trim($_POST['img'] ?? '');
+
+        if ($id > 0 && !empty($name) && $brand_id > 0 && $price >= 0 && $stock >= 0) {
+            try {
+                $stmt = $pdo->prepare("UPDATE products SET brand_id = ?, name = ?, price = ?, stock = ?, img = ? WHERE id = ?");
+                $stmt->execute([$brand_id, $name, $price, $stock, $img, $id]);
+                $toastMessage = "showToast('Cập nhật sản phẩm thành công!', 'success');";
+            } catch (PDOException $e) {
+                $toastMessage = "showToast('Lỗi khi cập nhật: " . addslashes($e->getMessage()) . "', 'error');";
+            }
+        }
+    } 
+    // 3. XÓA SẢN PHẨM
+    elseif ($action === 'delete_product') {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
+                $stmt->execute([$id]);
+                $toastMessage = "showToast('Đã xóa sản phẩm thành công!', 'success');";
+            } catch (PDOException $e) {
+                if ($e->getCode() == '23000') {
+                    $toastMessage = "showToast('Không thể xóa! Sản phẩm này đã phát sinh đơn hàng.', 'error');";
+                } else {
+                    $toastMessage = "showToast('Lỗi khi xóa: " . addslashes($e->getMessage()) . "', 'error');";
+                }
+            }
+        }
+    }
+    // 4. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+    elseif ($action === 'update_order_status') {
+        $order_id = (int)($_POST['order_id'] ?? 0);
+        $status = $_POST['status'] ?? '';
+        $valid_statuses = ['pending', 'processing', 'completed', 'cancelled'];
+        
+        if ($order_id > 0 && in_array($status, $valid_statuses)) {
+            try {
+                $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
+                $stmt->execute([$status, $order_id]);
+                $toastMessage = "showToast('Cập nhật trạng thái đơn hàng thành công!', 'success');";
+            } catch (PDOException $e) {
+                $toastMessage = "showToast('Lỗi khi cập nhật đơn hàng: " . addslashes($e->getMessage()) . "', 'error');";
+            }
+        }
+    }
+    // CODE THÊM MỚI: 5. XÓA KHÁCH HÀNG
+    elseif ($action === 'delete_customer') {
+        $customer_id = (int)($_POST['customer_id'] ?? 0);
+        if ($customer_id > 0) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? AND role = 'user'");
+                $stmt->execute([$customer_id]);
+                $toastMessage = "showToast('Đã xóa khách hàng thành công!', 'success');";
+            } catch (PDOException $e) {
+                if ($e->getCode() == '23000') {
+                    $toastMessage = "showToast('Không thể xóa! Khách hàng này đã có lịch sử đơn hàng.', 'error');";
+                } else {
+                    $toastMessage = "showToast('Lỗi khi xóa: " . addslashes($e->getMessage()) . "', 'error');";
+                }
+            }
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -8,83 +107,33 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chart.js for Dashboard Graphics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: '#2563eb',
-                        secondary: '#1d4ed8',
-                        dark: '#0f172a',
-                        light: '#f8fafc'
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { primary: '#2563eb', secondary: '#1d4ed8', dark: '#0f172a', light: '#f8fafc' }
                 }
             }
         }
     </script>
     
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-        }
-
-        .admin-section {
-            display: none;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        .admin-section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Sidebar transitions */
-        .sidebar-transition {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-
-        /* Toast Animation */
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-        .toast-enter {
-            animation: slideInRight 0.3s forwards;
-        }
-        .toast-exit {
-            animation: slideOutRight 0.3s forwards;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .admin-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .admin-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .sidebar-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        .toast-enter { animation: slideInRight 0.3s forwards; }
+        .toast-exit { animation: slideOutRight 0.3s forwards; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-gray-800">
@@ -97,13 +146,11 @@
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col h-full overflow-hidden relative z-0">
-        
         <!-- Topbar -->
         <?php require_once 'includes/topbar.php'; ?>
 
         <!-- Content Area -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 lg:p-6">
-            
             <!-- SECTION: DASHBOARD -->
             <?php require_once 'includes/dashboard.php'; ?>
 
@@ -112,6 +159,13 @@
 
             <!-- SECTION: ORDERS -->
             <?php require_once 'includes/orders.php'; ?>
+
+            <!-- SECTION: STATISTICS -->
+            <?php require_once 'includes/statistics.php'; ?>
+
+            <!-- CODE THÊM MỚI: Nhúng file Khách hàng vào layout -->
+            <!-- SECTION: CUSTOMERS -->
+            <?php require_once 'includes/customers.php'; ?>
         </main>
     </div>
 
@@ -119,92 +173,11 @@
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3"></div>
 
     <script>
-        // Dữ liệu lấy từ PHP (data/products.php), dùng chung với trang khách
-        const brands = <?= json_encode(getBrands(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-        const adminProducts = <?= json_encode(getProducts(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-
-        // Ảnh dự phòng khi ảnh sản phẩm tải lỗi
-        const FALLBACK_IMG = '../assets/placeholder-laptop.svg';
-        document.addEventListener('error', (e) => {
-            const t = e.target;
-            if (t && t.tagName === 'IMG' && !t.dataset.fallback) {
-                t.dataset.fallback = '1';
-                t.src = FALLBACK_IMG;
-            }
-        }, true);
-
-        const escapeHtml = (str) => String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        const brandName = (slug) => {
-            const b = brands.find(x => x.slug === slug);
-            return b ? b.short : slug;
-        };
-
-        // Format Currency
-        function formatCurrency(number) {
-            return number.toLocaleString('vi-VN') + ' ₫';
-        }
-
-        // Render Product Table
-        function renderAdminProducts() {
-            const tbody = document.getElementById('admin-product-list');
-            const keyword = (document.getElementById('admin-product-search').value || '').trim().toLowerCase();
-            const brand = document.getElementById('admin-brand-filter').value || 'all';
-
-            const list = adminProducts.filter(p => {
-                const code = 'tn' + p.id.toString().padStart(4, '0');
-                const matchBrand = brand === 'all' || p.brand === brand;
-                const matchKeyword = !keyword || p.name.toLowerCase().includes(keyword) || code.includes(keyword);
-                return matchBrand && matchKeyword;
-            });
-
-            tbody.innerHTML = list.map(product => {
-                const inStock = product.stock > 0;
-                const statusClass = inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-                const statusText = inStock ? 'Còn hàng' : 'Hết hàng';
-
-                return `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10 border border-gray-200 rounded overflow-hidden">
-                                    <img class="h-10 w-10 object-contain bg-white" src="${escapeHtml(product.img)}" alt="">
-                                </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">${escapeHtml(product.name)}</div>
-                                    <div class="text-xs text-gray-500">Mã: TN${product.id.toString().padStart(4, '0')} &middot; ${escapeHtml(brandName(product.brand))}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900 font-bold">${formatCurrency(product.price)}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">${product.stock} chiếc</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                                ${statusText}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="showToast('Sửa sản phẩm ID: ${product.id}', 'info')" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button onclick="showToast('Xoá sản phẩm ID: ${product.id}', 'error')" class="text-red-600 hover:text-red-900"><i class="fa-solid fa-trash-can"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('') || '<tr><td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500">Không tìm thấy sản phẩm phù hợp.</td></tr>';
-
-            document.getElementById('admin-product-count').innerText = `Hiển thị ${list.length} / ${adminProducts.length} sản phẩm`;
-        }
-
         // SPA Navigation for Admin
         function navigateAdmin(targetId) {
-            // Hide all
             document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
-            // Show target
             document.getElementById(targetId).classList.add('active');
 
-            // Update Nav styling
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('bg-primary', 'text-white', 'shadow-sm');
                 btn.classList.add('text-gray-300');
@@ -215,36 +188,29 @@
                 activeBtn.classList.add('bg-primary', 'text-white', 'shadow-sm');
             }
 
-            // Close sidebar on mobile after clicking
             if (window.innerWidth < 768) {
                 toggleSidebar();
             }
         }
 
-        // Mobile Sidebar Toggle
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
-            
             if (sidebar.classList.contains('hidden')) {
-                // Mở
                 sidebar.classList.remove('hidden');
                 sidebar.classList.add('flex');
                 overlay.classList.remove('hidden');
             } else {
-                // Đóng
                 sidebar.classList.add('hidden');
                 sidebar.classList.remove('flex');
                 overlay.classList.add('hidden');
             }
         }
 
-        // Toast Notification System (Replace alert)
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             
-            // Set styles based on type
             let icon = 'fa-info-circle text-blue-500';
             let border = 'border-blue-500';
             if (type === 'success') { icon = 'fa-check-circle text-green-500'; border = 'border-green-500'; }
@@ -255,66 +221,32 @@
                 <i class="fa-solid ${icon} text-xl mr-3"></i>
                 <div class="text-sm font-medium text-gray-800">${message}</div>
             `;
-
             container.appendChild(toast);
 
-            // Auto remove after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('toast-enter');
                 toast.classList.add('toast-exit');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300); // Wait for exit animation
+                setTimeout(() => { toast.remove(); }, 300);
             }, 3000);
         }
 
-        // Initialize Chart.js
-        function initChart() {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-                    datasets: [{
-                        label: 'Doanh thu (Triệu VNĐ)',
-                        data: [65, 59, 80, 81, 56, 120, 140],
-                        borderColor: '#2563eb', // primary color
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-        }
-
-        // Init on load
         window.onload = () => {
-            renderAdminProducts();
-            initChart();
+            if(typeof initRealDashboardChart === 'function') {
+                initRealDashboardChart();
+            }
+            if(typeof initRealStatsChart === 'function') {
+                initRealStatsChart();
+            }
         };
 
-        // Resize event to fix sidebar bug when rotating devices
         window.addEventListener('resize', () => {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             if (window.innerWidth >= 768) {
                 sidebar.classList.remove('hidden');
                 sidebar.classList.add('flex');
-                overlay.classList.add('hidden');
-            } else if(!overlay.classList.contains('hidden')){
-                // if it was open on mobile, keep it open, otherwise hide it
+                if(overlay) overlay.classList.add('hidden');
+            } else if(overlay && !overlay.classList.contains('hidden')){
                 sidebar.classList.add('flex');
                 sidebar.classList.remove('hidden');
             } else {
@@ -322,6 +254,26 @@
                 sidebar.classList.remove('flex');
             }
         });
+    </script>
+
+    <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])): ?>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            if(typeof navigateAdmin === 'function') {
+                <?php if (strpos($_POST['action'], 'product') !== false): ?>
+                navigateAdmin('products');
+                <?php elseif (strpos($_POST['action'], 'order') !== false): ?>
+                navigateAdmin('orders');
+                <?php elseif (strpos($_POST['action'], 'customer') !== false): ?>
+                navigateAdmin('customers');
+                <?php endif; ?>
+            }
+        });
+    </script>
+    <?php endif; ?>
+
+    <script>
+        <?= $toastMessage ?>
     </script>
 </body>
 </html>

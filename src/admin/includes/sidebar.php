@@ -20,9 +20,15 @@
                 <i class="fa-solid fa-cart-flatbed w-6 text-center mr-2"></i> Đơn hàng
                 <span class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
             </button>
-            <button onclick="showToast('Tính năng đang phát triển', 'info')" class="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors">
+            
+            <button onclick="navigateAdmin('statistics')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors" data-target="statistics">
+                <i class="fa-solid fa-chart-line w-6 text-center mr-2"></i> Thống kê
+            </button>
+            
+            <button onclick="navigateAdmin('customers')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors" data-target="customers">
                 <i class="fa-solid fa-users w-6 text-center mr-2"></i> Khách hàng
             </button>
+            
             <button onclick="showToast('Tính năng đang phát triển', 'info')" class="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors">
                 <i class="fa-solid fa-gear w-6 text-center mr-2"></i> Cài đặt
             </button>
