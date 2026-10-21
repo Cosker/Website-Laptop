@@ -157,6 +157,8 @@ require_once __DIR__ . '/data/articles.php';
             else if (pageId === 'checkout') renderCheckout();
             else if (pageId === 'article' && param) renderArticleDetail(param);
             else if (pageId === 'account') renderAccount();
+            else if (pageId === 'orders') renderMyOrders(true);
+            else if (pageId === 'order' && param) renderOrderDetailPage(param);
         }
 
         // 4b. ARTICLES (BÀI VIẾT)
@@ -383,6 +385,9 @@ require_once __DIR__ . '/data/articles.php';
             const authButtons = document.getElementById('auth-buttons');
             if (currentUser) {
                 authButtons.innerHTML = `
+                    <button onclick="navigate('orders')" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+                        <i class="fa-solid fa-receipt mr-1"></i> Đơn hàng
+                    </button>
                     <button onclick="navigate('account')" class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-blue-50 hover:text-primary">
                         <i class="fa-regular fa-user mr-1"></i> ${escapeHtml(currentUser.name || 'Tài khoản')}
                     </button>
@@ -511,50 +516,213 @@ require_once __DIR__ . '/data/articles.php';
             document.getElementById('profile-phone').value = currentUser.phone || '';
             document.getElementById('profile-address').value = currentUser.address || '';
 
+            // Tài khoản chỉ hiện 3 đơn gần nhất, xem hết ở trang "Đơn hàng của tôi"
             const history = document.getElementById('order-history');
             history.innerHTML = '<p class="text-gray-500 text-sm">Đang tải đơn hàng...</p>';
+            const myOrders = await fetchMyOrders();
+            if (!myOrders) {
+                history.innerHTML = '<p class="text-red-500 text-sm">Không tải được đơn hàng, vui lòng thử lại.</p>';
+                return;
+            }
+
+            document.getElementById('order-count').innerText = `Tổng cộng ${myOrders.length} đơn hàng`;
+            history.innerHTML = myOrders.length
+                ? myOrders.slice(0, 3).map(orderCardHTML).join('')
+                : emptyOrdersHTML('Bạn chưa có đơn hàng nào.');
+        }
+
+        // 5b. ĐƠN HÀNG CỦA TÔI
+        let myOrdersCache = [];
+        let myOrdersFilter = 'all';
+
+        // Lấy đơn của người dùng từ DB; trả về null nếu lỗi
+        async function fetchMyOrders() {
             const result = await api('api/orders.php');
-            if (!result.ok) {
-                history.innerHTML = `<p class="text-red-500 text-sm">${escapeHtml(result.message)}</p>`;
-                return;
-            }
+            if (!result.ok) return null;
+            myOrdersCache = result.orders;
+            return myOrdersCache;
+        }
 
-            const myOrders = result.orders;
-            document.getElementById('order-count').innerText = `${myOrders.length} đơn hàng`;
+        const orderCode = (id) => '#DH' + String(id).padStart(4, '0');
+        const orderDate = (s) => new Date(s.replace(' ', 'T')).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 
-            if (!myOrders.length) {
-                history.innerHTML = `<div class="text-center py-10 text-gray-500"><i class="fa-solid fa-box-open text-3xl mb-3"></i><p>Bạn chưa có đơn hàng nào.</p><button onclick="navigate('products')" class="mt-4 text-primary font-semibold hover:underline">Khám phá sản phẩm</button></div>`;
-                return;
-            }
+        function statusBadgeHTML(statusKey) {
+            const s = ORDER_STATUS[statusKey] || ORDER_STATUS.pending;
+            return `<span class="text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ${s.badge}"><i class="fa-solid ${s.icon} mr-1"></i>${s.label}</span>`;
+        }
 
-            history.innerHTML = myOrders.map(order => {
-                const status = ORDER_STATUS[order.status] || ORDER_STATUS.pending;
-                return `
-                <article class="border border-gray-200 rounded-xl p-4">
-                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 border-b border-gray-100 pb-3 mb-3">
-                        <div>
-                            <p class="font-bold text-dark">Đơn hàng #DH${String(order.id).padStart(4, '0')}</p>
-                            <p class="text-xs text-gray-500 mt-1">${new Date(order.createdAt.replace(' ', 'T')).toLocaleString('vi-VN')}</p>
+        function emptyOrdersHTML(message) {
+            return `<div class="text-center py-12 text-gray-500 bg-white rounded-xl border border-gray-100"><i class="fa-solid fa-box-open text-3xl mb-3"></i><p>${escapeHtml(message)}</p><button onclick="navigate('products')" class="mt-4 text-primary font-semibold hover:underline">Khám phá sản phẩm</button></div>`;
+        }
+
+        // Thẻ tóm tắt 1 đơn: sản phẩm đầu tiên + số sản phẩm còn lại, tổng tiền, nút xem chi tiết / mua lại
+        function orderCardHTML(order) {
+            const first = order.items[0];
+            const more = order.items.length - 1;
+            const qty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+            return `
+                <article class="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary/40 transition-colors">
+                    <div class="flex flex-wrap justify-between items-center gap-2 border-b border-gray-100 pb-3 mb-3">
+                        <div class="flex items-center gap-3">
+                            <button onclick="navigate('order', ${order.id})" class="font-bold text-dark hover:text-primary">${orderCode(order.id)}</button>
+                            <span class="text-xs text-gray-500">${orderDate(order.createdAt)}</span>
                         </div>
-                        <span class="text-xs font-semibold px-3 py-1 rounded-full ${status.badge}"><i class="fa-solid ${status.icon} mr-1"></i>${status.label}</span>
+                        ${statusBadgeHTML(order.status)}
                     </div>
-                    <div class="mb-4">${orderProgressHTML(order)}</div>
-                    <div class="space-y-2">
+                    ${first ? `
+                    <div class="flex items-center gap-3 cursor-pointer" onclick="navigate('order', ${order.id})">
+                        <img src="${escapeHtml(first.img)}" alt="" class="w-16 h-16 object-contain bg-gray-50 rounded-lg border border-gray-100">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-dark line-clamp-1">${escapeHtml(first.name)}</p>
+                            <p class="text-xs text-gray-500">x${first.quantity}${more > 0 ? ` · và ${more} sản phẩm khác` : ''}</p>
+                        </div>
+                        <span class="text-sm font-semibold whitespace-nowrap">${formatCurrency(first.price * first.quantity)}</span>
+                    </div>` : ''}
+                    <div class="border-t border-gray-100 mt-3 pt-3 flex flex-wrap justify-between items-center gap-3">
+                        <span class="text-sm text-gray-500">${qty} sản phẩm · ${escapeHtml(order.payment)}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-gray-500">Thành tiền: <strong class="text-primary text-base">${formatCurrency(order.total)}</strong></span>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap justify-end gap-2 mt-3">
+                        ${['completed', 'cancelled'].includes(order.status) ? `<button onclick="rebuyOrder(${order.id})" class="px-4 py-2 rounded-lg text-sm font-medium border border-primary text-primary hover:bg-blue-50"><i class="fa-solid fa-rotate-right mr-1"></i>Mua lại</button>` : ''}
+                        <button onclick="navigate('order', ${order.id})" class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-secondary">Xem chi tiết</button>
+                    </div>
+                </article>`;
+        }
+
+        async function renderMyOrders(reload = false) {
+            if (!currentUser) {
+                showModal('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để xem đơn hàng.', 'error');
+                navigate('login');
+                return;
+            }
+            const list = document.getElementById('my-orders-list');
+            if (reload) {
+                list.innerHTML = '<p class="text-gray-500 text-sm">Đang tải đơn hàng...</p>';
+                if (!await fetchMyOrders()) {
+                    list.innerHTML = '<p class="text-red-500 text-sm">Không tải được đơn hàng, vui lòng thử lại.</p>';
+                    return;
+                }
+            }
+
+            // Tab lọc theo trạng thái, kèm số lượng đơn của từng trạng thái
+            const tabs = [['all', 'Tất cả', myOrdersCache.length],
+                ...Object.entries(ORDER_STATUS).map(([key, s]) => [key, s.label, myOrdersCache.filter(o => o.status === key).length])];
+            document.getElementById('my-orders-tabs').innerHTML = tabs.map(([key, label, count]) => {
+                const active = key === myOrdersFilter;
+                return `<button onclick="myOrdersFilter='${key}'; renderMyOrders()" class="px-4 py-2 rounded-full text-sm font-medium border whitespace-nowrap transition-colors ${active ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}">${label} <span class="${active ? 'text-blue-100' : 'text-gray-400'}">(${count})</span></button>`;
+            }).join('');
+
+            const keyword = document.getElementById('my-orders-search').value.trim().toLowerCase().replace(/^#/, '');
+            const filtered = myOrdersCache.filter(o =>
+                (myOrdersFilter === 'all' || o.status === myOrdersFilter) &&
+                (!keyword || orderCode(o.id).slice(1).toLowerCase().includes(keyword) || o.items.some(i => i.name.toLowerCase().includes(keyword)))
+            );
+
+            if (!myOrdersCache.length) list.innerHTML = emptyOrdersHTML('Bạn chưa có đơn hàng nào.');
+            else if (!filtered.length) list.innerHTML = emptyOrdersHTML('Không có đơn hàng phù hợp.');
+            else list.innerHTML = filtered.map(orderCardHTML).join('');
+        }
+
+        // Trang chi tiết 1 đơn: tiến trình, nhận hàng, thanh toán, sản phẩm
+        async function renderOrderDetailPage(id) {
+            if (!currentUser) {
+                showModal('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để xem đơn hàng.', 'error');
+                navigate('login');
+                return;
+            }
+            const box = document.getElementById('order-detail');
+            let order = myOrdersCache.find(o => o.id === id);
+            if (!order) {
+                box.innerHTML = '<p class="text-gray-500 text-sm">Đang tải đơn hàng...</p>';
+                await fetchMyOrders();
+                order = myOrdersCache.find(o => o.id === id);
+            }
+            if (!order) {
+                box.innerHTML = emptyOrdersHTML('Không tìm thấy đơn hàng này trong tài khoản của bạn.');
+                return;
+            }
+
+            const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            box.innerHTML = `
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+                    <div class="flex flex-wrap justify-between items-start gap-3 mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-dark">Đơn hàng ${orderCode(order.id)}</h2>
+                            <p class="text-sm text-gray-500 mt-1">Đặt lúc ${orderDate(order.createdAt)}</p>
+                        </div>
+                        ${statusBadgeHTML(order.status)}
+                    </div>
+                    ${orderProgressHTML(order)}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <h3 class="font-bold text-dark mb-4"><i class="fa-solid fa-location-dot text-primary mr-2"></i>Địa chỉ nhận hàng</h3>
+                        <p class="font-semibold text-dark">${escapeHtml(order.receiverName || '')}</p>
+                        <p class="text-sm text-gray-600 mt-1">${escapeHtml(order.phone || '')}</p>
+                        <p class="text-sm text-gray-600 mt-1">${escapeHtml(order.address || '')}</p>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <h3 class="font-bold text-dark mb-4"><i class="fa-solid fa-credit-card text-primary mr-2"></i>Thanh toán</h3>
+                        <p class="font-semibold text-dark">${escapeHtml(order.payment)}</p>
+                        ${order.transfer && order.status === 'pending' ? `
+                            <div class="mt-3 p-3 rounded-lg bg-blue-50 border border-blue-100 text-sm text-gray-700 whitespace-pre-line"><p class="font-semibold text-dark mb-1"><i class="fa-solid fa-building-columns text-primary mr-1"></i>Vui lòng chuyển khoản</p>${escapeHtml(transferText(order.transfer))}</div>` : ''}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <h3 class="font-bold text-dark mb-4"><i class="fa-solid fa-box-open text-primary mr-2"></i>Sản phẩm</h3>
+                    <div class="divide-y divide-gray-100">
                         ${order.items.map(item => `
-                            <div class="flex items-center gap-3">
-                                <img src="${escapeHtml(item.img)}" alt="" class="w-12 h-12 object-contain bg-gray-50 rounded">
-                                <div class="flex-1 min-w-0"><p class="text-sm font-medium">${escapeHtml(item.name)}</p><p class="text-xs text-gray-500">Số lượng: ${item.quantity}</p></div>
-                                <span class="text-sm font-semibold">${formatCurrency(item.price * item.quantity)}</span>
+                            <div class="flex items-center gap-4 py-3">
+                                <img src="${escapeHtml(item.img)}" alt="" class="w-16 h-16 object-contain bg-gray-50 rounded-lg border border-gray-100 cursor-pointer" onclick="navigate('detail', ${item.id})">
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium text-dark hover:text-primary cursor-pointer line-clamp-1" onclick="navigate('detail', ${item.id})">${escapeHtml(item.name)}</p>
+                                    <p class="text-xs text-gray-500">${formatCurrency(item.price)} × ${item.quantity}</p>
+                                </div>
+                                <span class="font-semibold whitespace-nowrap">${formatCurrency(item.price * item.quantity)}</span>
                             </div>`).join('')}
                     </div>
-                    <div class="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center gap-3">
-                        <span class="text-sm text-gray-500">Thanh toán: ${escapeHtml(order.payment)}</span>
-                        <strong class="text-primary">${formatCurrency(order.total)}</strong>
+                    <div class="border-t border-gray-100 mt-2 pt-4 ml-auto max-w-xs space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-500">Tạm tính</span><span>${formatCurrency(subtotal)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Phí giao hàng</span><span class="text-green-600 font-medium">Miễn phí</span></div>
+                        <div class="flex justify-between items-center border-t border-gray-100 pt-2"><span class="font-bold text-dark">Tổng cộng</span><span class="font-bold text-primary text-xl">${formatCurrency(order.total)}</span></div>
                     </div>
-                    ${order.transfer && order.status === 'pending' ? `
-                        <div class="mt-3 p-3 rounded-lg bg-blue-50 border border-blue-100 text-sm text-gray-700 whitespace-pre-line"><p class="font-semibold text-dark mb-1"><i class="fa-solid fa-building-columns text-primary mr-1"></i>Chờ chuyển khoản</p>${escapeHtml(transferText(order.transfer))}</div>` : ''}
-                </article>`;
-            }).join('');
+                    ${['completed', 'cancelled'].includes(order.status) ? `
+                        <div class="flex justify-end mt-6">
+                            <button onclick="rebuyOrder(${order.id})" class="px-5 py-2.5 rounded-lg font-semibold bg-primary text-white hover:bg-secondary"><i class="fa-solid fa-rotate-right mr-2"></i>Mua lại</button>
+                        </div>` : ''}
+                </div>`;
+        }
+
+        // Mua lại: thêm các sản phẩm còn hàng của đơn cũ vào giỏ (giá theo hiện tại)
+        function rebuyOrder(id) {
+            const order = myOrdersCache.find(o => o.id === id);
+            if (!order) return;
+            let added = 0;
+            const skipped = [];
+            order.items.forEach(item => {
+                const p = products.find(x => x.id === item.id);
+                if (!p || p.stock <= 0) { skipped.push(item.name); return; }
+                const existing = cart.find(c => c.id === p.id);
+                const qty = Math.min(item.quantity, p.stock);
+                if (existing) existing.quantity = Math.min(existing.quantity + qty, p.stock);
+                else cart.push({ ...p, quantity: qty });
+                added++;
+            });
+            localStorage.setItem('technova_cart', JSON.stringify(cart));
+            updateCartUI();
+
+            if (!added) {
+                showModal('Không thể mua lại', 'Các sản phẩm trong đơn này hiện đã hết hàng.', 'error');
+                return;
+            }
+            toggleCart();
+            if (skipped.length) {
+                showModal('Đã thêm vào giỏ', `Một số sản phẩm đã hết hàng nên không được thêm: ${skipped.join(', ')}.`, 'info');
+            }
         }
 
         async function saveProfile(e) {
@@ -827,11 +995,12 @@ require_once __DIR__ . '/data/articles.php';
             updatePaymentUI();
             updateAuthUI();
             renderProducts();
-            const orderCode = `#DH${String(result.orderId).padStart(4, '0')}`;
+            const code = orderCode(result.orderId);
             showModal('Đặt hàng thành công!', result.transfer
-                ? `Đơn hàng ${orderCode} đã được ghi nhận. Vui lòng chuyển khoản theo thông tin sau:\n\n${transferText(result.transfer)}\n\nThông tin này cũng có trong Tài khoản của tôi.`
-                : `Đơn hàng ${orderCode} đã được ghi nhận. Tổng tiền: ${formatCurrency(result.total)}. Bạn có thể theo dõi trong Tài khoản của tôi.`, 'success');
-            navigate('account');
+                ? `Đơn hàng ${code} đã được ghi nhận. Vui lòng chuyển khoản theo thông tin sau:\n\n${transferText(result.transfer)}\n\nThông tin này cũng có trong mục Đơn hàng của tôi.`
+                : `Đơn hàng ${code} đã được ghi nhận. Tổng tiền: ${formatCurrency(result.total)}. Bạn có thể theo dõi trong mục Đơn hàng của tôi.`, 'success');
+            await fetchMyOrders();
+            navigate('order', result.orderId);
         }
 
         // INIT
@@ -850,12 +1019,13 @@ require_once __DIR__ . '/data/articles.php';
 
         // Mở mục theo địa chỉ hiện tại (khi tải lại trang hoặc bấm Back/Forward).
         // Trang thanh toán không mở lại trực tiếp vì cần giỏ hàng / sản phẩm đang mua.
-        const RESTORABLE_PAGES = ['home', 'products', 'blog', 'article', 'about', 'detail', 'account', 'login', 'register'];
+        const RESTORABLE_PAGES = ['home', 'products', 'blog', 'article', 'about', 'detail', 'account', 'orders', 'order', 'login', 'register'];
 
         function openPageFromHash() {
             const [pageId, rawParam] = location.hash.slice(1).split('/');
             const param = rawParam ? parseInt(rawParam, 10) : null;
-            if (RESTORABLE_PAGES.includes(pageId)) {
+            const loggedInAuthPage = currentUser && ['login', 'register'].includes(pageId);
+            if (RESTORABLE_PAGES.includes(pageId) && !loggedInAuthPage) {
                 history.replaceState({ pageId, param }, '', pageHash(pageId, param));
                 navigate(pageId, param, true);
             } else {

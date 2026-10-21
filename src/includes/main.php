@@ -368,14 +368,48 @@
                     </div>
                     <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                         <div class="flex items-center justify-between gap-3 mb-5">
-                            <h3 class="text-lg font-bold"><i class="fa-solid fa-box-open text-primary mr-2"></i>Lịch sử đơn hàng</h3>
-                            <span id="order-count" class="text-sm text-gray-500">0 đơn hàng</span>
+                            <div>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-box-open text-primary mr-2"></i>Đơn hàng gần đây</h3>
+                                <span id="order-count" class="text-sm text-gray-500">0 đơn hàng</span>
+                            </div>
+                            <button onclick="navigate('orders')" class="text-sm font-semibold text-primary hover:underline">
+                                Xem tất cả đơn hàng <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
                         </div>
                         <div id="order-history" class="space-y-4">
                             <p class="text-gray-500 text-sm">Bạn chưa có đơn hàng nào.</p>
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Đơn hàng của tôi: danh sách + lọc theo trạng thái -->
+        <section id="orders" class="page-section py-12 bg-gray-50 min-h-[70vh]">
+            <div class="container mx-auto px-4 lg:px-8 max-w-5xl">
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-dark">Đơn hàng của tôi</h2>
+                        <p class="text-gray-500 mt-1">Theo dõi trạng thái và xem lại các đơn đã đặt</p>
+                    </div>
+                    <div class="relative w-full sm:w-72">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input id="my-orders-search" type="search" oninput="renderMyOrders()" placeholder="Tìm mã đơn hoặc tên sản phẩm" class="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                    </div>
+                </div>
+
+                <div id="my-orders-tabs" class="flex gap-2 overflow-x-auto pb-2 mb-4"></div>
+                <div id="my-orders-list" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <!-- Chi tiết 1 đơn hàng của khách -->
+        <section id="order" class="page-section py-12 bg-gray-50 min-h-[70vh]">
+            <div class="container mx-auto px-4 lg:px-8 max-w-5xl">
+                <button onclick="navigate('orders')" class="text-gray-500 hover:text-primary mb-6 flex items-center text-sm font-medium">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Đơn hàng của tôi
+                </button>
+                <div id="order-detail"></div>
             </div>
         </section>
 
