@@ -186,8 +186,8 @@ $avgSpent = $totalCustomers > 0 ? round($totalSpentAll / $totalCustomers) : 0;
                                     ${avatarLetter}
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-bold text-gray-900">${c.name}</div>
-                                    <div class="text-xs text-gray-500">${c.email}</div>
+                                    <div class="text-sm font-bold text-gray-900">${esc(c.name)}</div>
+                                    <div class="text-xs text-gray-500">${esc(c.email)}</div>
                                 </div>
                             </div>
                         </td>

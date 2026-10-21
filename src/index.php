@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/data/products.php';
 require_once __DIR__ . '/data/articles.php';
 ?>
@@ -95,10 +96,15 @@ require_once __DIR__ . '/data/articles.php';
         const articles = <?= json_encode(getArticles(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
         // 2. STATE VARIABLES
-        let cart = JSON.parse(localStorage.getItem('technova_cart')) || [];
-        let currentUser = JSON.parse(localStorage.getItem('technova_user')) || null;
-        let registeredUsers = JSON.parse(localStorage.getItem('technova_users')) || [];
-        let orders = JSON.parse(localStorage.getItem('technova_orders')) || [];
+        // Giỏ hàng lưu ở trình duyệt; giá và tồn kho luôn lấy lại theo dữ liệu mới nhất từ DB
+        let cart = (JSON.parse(localStorage.getItem('technova_cart')) || [])
+            .map(item => {
+                const p = products.find(x => x.id === item.id);
+                return p ? { ...p, quantity: item.quantity } : null;
+            })
+            .filter(Boolean);
+        // Người dùng đăng nhập lấy từ PHP session (bảng users)
+        let currentUser = <?= json_encode(currentUser(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         let checkoutType = 'cart'; // 'cart' or 'buy_now'
         let buyNowItem = null;
 
@@ -323,6 +329,7 @@ require_once __DIR__ . '/data/articles.php';
                     <button onclick="navigate('account')" class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-blue-50 hover:text-primary">
                         <i class="fa-regular fa-user mr-1"></i> ${escapeHtml(currentUser.name || 'Tài khoản')}
                     </button>
+                    ${currentUser.role === 'admin' ? `<a href="admin/index.php" class="text-sm font-medium text-primary hover:underline"><i class="fa-solid fa-gauge mr-1"></i>Quản trị</a>` : ''}
                     <button onclick="handleLogout()" class="text-sm text-red-500 hover:underline ml-1 font-medium">Đăng xuất</button>
                 `;
             } else {
@@ -333,29 +340,44 @@ require_once __DIR__ . '/data/articles.php';
             }
         }
 
-        function handleLogin(e) {
+        // Gọi API PHP (JSON); trả về { ok, message, ... }
+        async function api(url, data) {
+            try {
+                const res = await fetch(url, data === undefined ? {} : {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return await res.json();
+            } catch (err) {
+                return { ok: false, message: 'Không kết nối được máy chủ, vui lòng thử lại.' };
+            }
+        }
+
+        async function handleLogin(e) {
             e.preventDefault();
             const form = e.currentTarget;
-            const email = form.elements.email.value.trim().toLowerCase();
-            const password = form.elements.password.value;
-            const user = registeredUsers.find(u => u.email.toLowerCase() === email && u.password === password);
+            const result = await api('api/auth.php', {
+                action: 'login',
+                email: form.elements.email.value.trim(),
+                password: form.elements.password.value
+            });
 
-            if (!user) {
-                showModal('Đăng nhập thất bại', 'Email hoặc mật khẩu không đúng. Nếu chưa có tài khoản, hãy đăng ký trước.', 'error');
+            if (!result.ok) {
+                showModal('Đăng nhập thất bại', result.message, 'error');
                 return;
             }
 
-            currentUser = { name: user.name, email: user.email, phone: user.phone || '', address: user.address || '' };
-            localStorage.setItem('technova_user', JSON.stringify(currentUser));
+            currentUser = result.user;
+            form.reset();
             updateAuthUI();
             showModal('Thành công', `Xin chào ${currentUser.name}!`, 'success');
             navigate('home');
         }
 
-        function handleRegister(e) {
+        async function handleRegister(e) {
             e.preventDefault();
             const form = e.currentTarget;
-            const name = form.elements.name.value.trim();
             const email = form.elements.email.value.trim().toLowerCase();
             const password = form.elements.password.value;
 
@@ -363,29 +385,41 @@ require_once __DIR__ . '/data/articles.php';
                 showModal('Mật khẩu chưa hợp lệ', 'Mật khẩu cần có ít nhất 8 ký tự.', 'error');
                 return;
             }
-            if (registeredUsers.some(u => u.email.toLowerCase() === email)) {
-                showModal('Email đã tồn tại', 'Email này đã được đăng ký. Hãy đăng nhập hoặc sử dụng email khác.', 'error');
+
+            const result = await api('api/auth.php', {
+                action: 'register',
+                name: form.elements.name.value.trim(),
+                email,
+                password
+            });
+            if (!result.ok) {
+                showModal('Đăng ký thất bại', result.message, 'error');
                 return;
             }
 
-            registeredUsers.push({ name, email, password, phone: '', address: '', createdAt: new Date().toISOString() });
-            localStorage.setItem('technova_users', JSON.stringify(registeredUsers));
             form.reset();
             navigate('login');
             const loginForm = document.querySelector('#login form');
             if (loginForm) loginForm.elements.email.value = email;
-            showModal('Đăng ký thành công', 'Tài khoản đã được lưu trên trình duyệt. Hãy đăng nhập để tiếp tục.', 'success');
+            showModal('Đăng ký thành công', result.message, 'success');
         }
 
-        function handleLogout() {
+        async function handleLogout() {
+            await api('api/auth.php', { action: 'logout' });
             currentUser = null;
-            localStorage.removeItem('technova_user');
             updateAuthUI();
             showModal('Thông báo', 'Bạn đã đăng xuất khỏi hệ thống.', 'info');
             navigate('home');
         }
 
-        function renderAccount() {
+        const ORDER_STATUS = {
+            pending: { label: 'Chờ xác nhận', cls: 'bg-amber-50 text-amber-700' },
+            processing: { label: 'Đang giao hàng', cls: 'bg-blue-50 text-blue-700' },
+            completed: { label: 'Hoàn thành', cls: 'bg-green-50 text-green-700' },
+            cancelled: { label: 'Đã huỷ', cls: 'bg-red-50 text-red-700' }
+        };
+
+        async function renderAccount() {
             if (!currentUser) {
                 showModal('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để xem tài khoản.', 'error');
                 navigate('login');
@@ -397,23 +431,32 @@ require_once __DIR__ . '/data/articles.php';
             document.getElementById('profile-phone').value = currentUser.phone || '';
             document.getElementById('profile-address').value = currentUser.address || '';
 
-            const myOrders = orders.filter(order => order.email === currentUser.email);
-            document.getElementById('order-count').innerText = `${myOrders.length} đơn hàng`;
             const history = document.getElementById('order-history');
+            history.innerHTML = '<p class="text-gray-500 text-sm">Đang tải đơn hàng...</p>';
+            const result = await api('api/orders.php');
+            if (!result.ok) {
+                history.innerHTML = `<p class="text-red-500 text-sm">${escapeHtml(result.message)}</p>`;
+                return;
+            }
+
+            const myOrders = result.orders;
+            document.getElementById('order-count').innerText = `${myOrders.length} đơn hàng`;
 
             if (!myOrders.length) {
                 history.innerHTML = `<div class="text-center py-10 text-gray-500"><i class="fa-solid fa-box-open text-3xl mb-3"></i><p>Bạn chưa có đơn hàng nào.</p><button onclick="navigate('products')" class="mt-4 text-primary font-semibold hover:underline">Khám phá sản phẩm</button></div>`;
                 return;
             }
 
-            history.innerHTML = [...myOrders].reverse().map(order => `
+            history.innerHTML = myOrders.map(order => {
+                const status = ORDER_STATUS[order.status] || ORDER_STATUS.pending;
+                return `
                 <article class="border border-gray-200 rounded-xl p-4">
                     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 border-b border-gray-100 pb-3 mb-3">
                         <div>
-                            <p class="font-bold text-dark">Đơn hàng #${escapeHtml(order.id)}</p>
-                            <p class="text-xs text-gray-500 mt-1">${new Date(order.createdAt).toLocaleString('vi-VN')}</p>
+                            <p class="font-bold text-dark">Đơn hàng #DH${String(order.id).padStart(4, '0')}</p>
+                            <p class="text-xs text-gray-500 mt-1">${new Date(order.createdAt.replace(' ', 'T')).toLocaleString('vi-VN')}</p>
                         </div>
-                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700">${escapeHtml(order.status || 'Đang xử lý')}</span>
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full ${status.cls}">${status.label}</span>
                     </div>
                     <div class="space-y-2">
                         ${order.items.map(item => `
@@ -427,28 +470,33 @@ require_once __DIR__ . '/data/articles.php';
                         <span class="text-sm text-gray-500">Thanh toán: ${escapeHtml(order.payment)}</span>
                         <strong class="text-primary">${formatCurrency(order.total)}</strong>
                     </div>
-                </article>
-            `).join('');
+                </article>`;
+            }).join('');
         }
 
-        function saveProfile(e) {
+        async function saveProfile(e) {
             e.preventDefault();
             if (!currentUser) return;
             const name = document.getElementById('profile-name').value.trim();
-            const phone = document.getElementById('profile-phone').value.trim();
-            const address = document.getElementById('profile-address').value.trim();
             if (!name) {
                 showModal('Thiếu thông tin', 'Vui lòng nhập họ tên.', 'error');
                 return;
             }
 
-            currentUser = { ...currentUser, name, phone, address };
-            localStorage.setItem('technova_user', JSON.stringify(currentUser));
-            registeredUsers = registeredUsers.map(user => user.email === currentUser.email
-                ? { ...user, name, phone, address } : user);
-            localStorage.setItem('technova_users', JSON.stringify(registeredUsers));
+            const result = await api('api/auth.php', {
+                action: 'update_profile',
+                name,
+                phone: document.getElementById('profile-phone').value.trim(),
+                address: document.getElementById('profile-address').value.trim()
+            });
+            if (!result.ok) {
+                showModal('Lỗi', result.message, 'error');
+                return;
+            }
+
+            currentUser = result.user;
             updateAuthUI();
-            showModal('Thành công', 'Đã cập nhật thông tin tài khoản.', 'success');
+            showModal('Thành công', result.message, 'success');
         }
 
         // 6. CART LOGIC
@@ -595,7 +643,9 @@ require_once __DIR__ . '/data/articles.php';
             document.getElementById('checkout-total').innerText = formatCurrency(total);
         }
 
-        function processOrder() {
+        let placingOrder = false;
+
+        async function processOrder() {
             if (!currentUser) {
                 showModal('Yêu cầu đăng nhập', 'Vui lòng đăng nhập trước khi đặt hàng.', 'error');
                 navigate('login');
@@ -614,30 +664,30 @@ require_once __DIR__ . '/data/articles.php';
                 showModal('Giỏ hàng trống', 'Không có sản phẩm để đặt hàng.', 'error');
                 return;
             }
+            if (placingOrder) return;
+            placingOrder = true;
 
-            const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
             const paymentInput = document.querySelector('input[name="payment"]:checked');
-            const order = {
-                id: 'TN' + Date.now().toString().slice(-8),
-                email: currentUser.email,
-                items: items.map(item => ({ id: item.id, name: item.name, img: item.img, price: item.price, quantity: item.quantity })),
-                total,
-                receiverName: form.elements.receiver_name.value.trim(),
+            const result = await api('api/orders.php', {
+                items: items.map(item => ({ id: item.id, quantity: item.quantity })),
+                receiver_name: form.elements.receiver_name.value.trim(),
                 phone: form.elements.phone.value.trim(),
                 address: form.elements.address.value.trim(),
-                payment: paymentInput ? paymentInput.value : 'COD',
-                status: 'Đang xử lý',
-                createdAt: new Date().toISOString()
-            };
+                payment: paymentInput ? paymentInput.value : 'COD'
+            });
+            placingOrder = false;
 
-            orders.push(order);
-            localStorage.setItem('technova_orders', JSON.stringify(orders));
+            if (!result.ok) {
+                showModal('Đặt hàng thất bại', result.message, 'error');
+                return;
+            }
 
-            currentUser = { ...currentUser, name: order.receiverName, phone: order.phone, address: order.address };
-            localStorage.setItem('technova_user', JSON.stringify(currentUser));
-            registeredUsers = registeredUsers.map(user => user.email === currentUser.email
-                ? { ...user, name: currentUser.name, phone: currentUser.phone, address: currentUser.address } : user);
-            localStorage.setItem('technova_users', JSON.stringify(registeredUsers));
+            // Cập nhật tồn kho hiển thị theo kết quả từ server
+            result.stock.forEach(s => {
+                const p = products.find(x => x.id === s.id);
+                if (p) p.stock = s.stock;
+            });
+            currentUser = result.user;
 
             if (checkoutType === 'cart') {
                 cart = [];
@@ -647,7 +697,8 @@ require_once __DIR__ . '/data/articles.php';
             buyNowItem = null;
             form.reset();
             updateAuthUI();
-            showModal('Đặt hàng thành công!', `Đơn hàng #${order.id} đã được lưu. Tổng tiền: ${formatCurrency(total)}. Bạn có thể theo dõi trong Tài khoản của tôi.`, 'success');
+            renderProducts();
+            showModal('Đặt hàng thành công!', `Đơn hàng #DH${String(result.orderId).padStart(4, '0')} đã được ghi nhận. Tổng tiền: ${formatCurrency(result.total)}. Bạn có thể theo dõi trong Tài khoản của tôi.`, 'success');
             navigate('account');
         }
 

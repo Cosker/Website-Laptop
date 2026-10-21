@@ -13,6 +13,6 @@
                     <i class="fa-regular fa-bell text-xl"></i>
                     <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
-                <a href="index.html" class="text-sm font-medium text-primary hover:underline hidden sm:block">Xem trang web <i class="fa-solid fa-up-right-from-square ml-1"></i></a>
+                <a href="../index.php" class="text-sm font-medium text-primary hover:underline hidden sm:block">Xem trang web <i class="fa-solid fa-up-right-from-square ml-1"></i></a>
             </div>
         </header>

@@ -1,0 +1,2 @@
+# Các file này chỉ được nạp qua admin/index.php, không cho truy cập trực tiếp
+Require all denied

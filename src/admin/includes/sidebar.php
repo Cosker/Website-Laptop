@@ -1,3 +1,4 @@
+<?php $sidebarPending = (int)$pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'pending'")->fetchColumn(); ?>
     <aside id="sidebar" class="sidebar-transition bg-dark text-white w-64 flex-shrink-0 hidden md:flex flex-col h-full absolute md:relative z-20">
         <!-- Logo -->
         <div class="h-16 flex items-center px-6 border-b border-gray-800">
@@ -18,7 +19,9 @@
             </button>
             <button onclick="navigateAdmin('orders')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors" data-target="orders">
                 <i class="fa-solid fa-cart-flatbed w-6 text-center mr-2"></i> Đơn hàng
-                <span class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
+                <?php if ($sidebarPending > 0): ?>
+                <span class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full"><?= $sidebarPending ?></span>
+                <?php endif; ?>
             </button>
             
             <button onclick="navigateAdmin('statistics')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 text-gray-300 transition-colors" data-target="statistics">
@@ -41,13 +44,13 @@
         <!-- User Profile -->
         <div class="p-4 border-t border-gray-800">
             <div class="flex items-center">
-                <img src="https://ui-avatars.com/api/?name=Admin&background=2563eb&color=fff" alt="Admin" class="w-9 h-9 rounded-full">
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-white">Admin</p>
-                    <p class="text-xs text-gray-400">Quản trị viên</p>
+                <img src="https://ui-avatars.com/api/?name=<?= urlencode(currentUser()['name']) ?>&background=2563eb&color=fff" alt="" class="w-9 h-9 rounded-full">
+                <div class="ml-3 min-w-0">
+                    <p class="text-sm font-medium text-white truncate"><?= htmlspecialchars(currentUser()['name']) ?></p>
+                    <p class="text-xs text-gray-400 truncate"><?= htmlspecialchars(currentUser()['email']) ?></p>
                 </div>
             </div>
-            <button onclick="window.location.href='index.html'" class="mt-4 w-full flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors">
+            <button onclick="window.location.href='logout.php'" class="mt-4 w-full flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors">
                 <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Đăng xuất
             </button>
         </div>

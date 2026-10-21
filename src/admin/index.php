@@ -1,5 +1,11 @@
 <?php
-require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/auth.php';
+
+// Chỉ tài khoản admin mới được vào trang quản trị
+if (!isAdmin()) {
+    header('Location: login.php');
+    exit;
+}
 
 $toastMessage = '';
 
@@ -14,11 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $price = (int)($_POST['price'] ?? 0);
         $stock = (int)($_POST['stock'] ?? 0);
         $img = trim($_POST['img'] ?? '');
+        $spec = trim($_POST['spec'] ?? '');
+        $description = trim($_POST['description'] ?? '');
 
         if (!empty($name) && $brand_id > 0 && $price >= 0 && $stock >= 0) {
             try {
-                $stmt = $pdo->prepare("INSERT INTO products (brand_id, name, price, stock, img) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$brand_id, $name, $price, $stock, $img]);
+                $stmt = $pdo->prepare("INSERT INTO products (brand_id, name, price, stock, img, spec, description) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$brand_id, $name, $price, $stock, $img, $spec, $description]);
                 $toastMessage = "showToast('Thêm sản phẩm thành công!', 'success');";
             } catch (PDOException $e) {
                 $toastMessage = "showToast('Lỗi khi thêm sản phẩm: " . addslashes($e->getMessage()) . "', 'error');";
@@ -35,11 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $price = (int)($_POST['price'] ?? 0);
         $stock = (int)($_POST['stock'] ?? 0);
         $img = trim($_POST['img'] ?? '');
+        $spec = trim($_POST['spec'] ?? '');
+        $description = trim($_POST['description'] ?? '');
 
         if ($id > 0 && !empty($name) && $brand_id > 0 && $price >= 0 && $stock >= 0) {
             try {
-                $stmt = $pdo->prepare("UPDATE products SET brand_id = ?, name = ?, price = ?, stock = ?, img = ? WHERE id = ?");
-                $stmt->execute([$brand_id, $name, $price, $stock, $img, $id]);
+                $stmt = $pdo->prepare("UPDATE products SET brand_id = ?, name = ?, price = ?, stock = ?, img = ?, spec = ?, description = ? WHERE id = ?");
+                $stmt->execute([$brand_id, $name, $price, $stock, $img, $spec, $description, $id]);
                 $toastMessage = "showToast('Cập nhật sản phẩm thành công!', 'success');";
             } catch (PDOException $e) {
                 $toastMessage = "showToast('Lỗi khi cập nhật: " . addslashes($e->getMessage()) . "', 'error');";
@@ -71,10 +81,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
         if ($order_id > 0 && in_array($status, $valid_statuses)) {
             try {
+                $pdo->beginTransaction();
+                $stmt = $pdo->prepare("SELECT status FROM orders WHERE id = ? FOR UPDATE");
+                $stmt->execute([$order_id]);
+                $oldStatus = $stmt->fetchColumn();
+
+                // Huỷ đơn thì trả hàng về kho; khôi phục đơn đã huỷ thì trừ kho lại
+                $stockDelta = 0;
+                if ($oldStatus !== 'cancelled' && $status === 'cancelled') $stockDelta = 1;
+                if ($oldStatus === 'cancelled' && $status !== 'cancelled') $stockDelta = -1;
+                if ($stockDelta !== 0) {
+                    $pdo->prepare("UPDATE products p JOIN order_details od ON od.product_id = p.id
+                                   SET p.stock = p.stock + ? * od.quantity WHERE od.order_id = ?")
+                        ->execute([$stockDelta, $order_id]);
+                }
+
                 $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
                 $stmt->execute([$status, $order_id]);
+                $pdo->commit();
                 $toastMessage = "showToast('Cập nhật trạng thái đơn hàng thành công!', 'success');";
             } catch (PDOException $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
                 $toastMessage = "showToast('Lỗi khi cập nhật đơn hàng: " . addslashes($e->getMessage()) . "', 'error');";
             }
         }
@@ -156,6 +183,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
+        // Escape chuỗi trước khi chèn vào HTML (tên, email do khách nhập)
+        const esc = (str) => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
         tailwind.config = {
             theme: {
                 extend: {
@@ -320,6 +350,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 <?php endif; ?>
             }
         });
+    </script>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['year'])): ?>
+    <script>
+        // Vừa chọn năm ở trang Thống kê -> mở lại đúng mục Thống kê
+        document.addEventListener("DOMContentLoaded", () => navigateAdmin('statistics'));
     </script>
     <?php endif; ?>
 

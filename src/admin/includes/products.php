@@ -59,7 +59,7 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Modal Thêm Sản Phẩm -->
     <div id="add-product-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform" id="add-product-content">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform scale-95 transition-transform" id="add-product-content">
             <div class="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/50">
                 <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-laptop-medical text-primary mr-2"></i> Thêm Laptop Mới</h3>
                 <button onclick="closeAddProductModal()" class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -99,6 +99,16 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
                         <label class="block text-sm font-medium text-gray-700 mb-1">Đường dẫn ảnh (URL) *</label>
                         <input type="url" name="img" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="https://...">
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cấu hình</label>
+                        <input type="text" name="spec" maxlength="255" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="VD: Core i5-1235U / 16GB / 512GB SSD">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+                        <textarea name="description" rows="3" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Giới thiệu ngắn về sản phẩm"></textarea>
+                    </div>
                 </div>
 
                 <div class="mt-8 flex justify-end space-x-3">
@@ -113,7 +123,7 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Modal Sửa Sản Phẩm -->
     <div id="edit-product-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform" id="edit-product-content">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform scale-95 transition-transform" id="edit-product-content">
             <div class="flex justify-between items-center p-5 border-b border-gray-100 bg-blue-50/50">
                 <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-pen-to-square text-primary mr-2"></i> Chỉnh Sửa Sản Phẩm</h3>
                 <button onclick="closeEditProductModal()" class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -152,6 +162,16 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Đường dẫn ảnh (URL) *</label>
                         <input type="url" name="img" id="edit_img" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cấu hình</label>
+                        <input type="text" name="spec" id="edit_spec" maxlength="255" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+                        <textarea name="description" id="edit_description" rows="3" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></textarea>
                     </div>
                 </div>
 
@@ -222,10 +242,10 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 border border-gray-200 rounded overflow-hidden">
-                                    <img class="h-10 w-10 object-contain bg-white" src="${p.img}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                                    <img class="h-10 w-10 object-contain bg-white" src="${esc(p.img)}" alt="${esc(p.name)}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">${p.name}</div>
+                                    <div class="text-sm font-medium text-gray-900">${esc(p.name)}</div>
                                     <div class="text-xs text-gray-500">Mã: TN${p.id.toString().padStart(4, '0')} &middot; ${p.brand_name || 'Không rõ'}</div>
                                 </div>
                             </div>
@@ -278,6 +298,8 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
         document.getElementById('edit_stock').value = product.stock;
         document.getElementById('edit_price').value = product.price;
         document.getElementById('edit_img').value = product.img;
+        document.getElementById('edit_spec').value = product.spec || '';
+        document.getElementById('edit_description').value = product.description || '';
 
         const modal = document.getElementById('edit-product-modal');
         const content = document.getElementById('edit-product-content');

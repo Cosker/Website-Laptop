@@ -81,6 +81,8 @@ foreach ($orders as $o) {
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Khách hàng</p>
                         <p class="font-bold text-gray-900 text-lg" id="detail-customer-name"></p>
+                        <p class="text-sm text-gray-600 mt-1" id="detail-customer-contact"></p>
+                        <p class="text-xs text-gray-500 mt-1" id="detail-payment-method"></p>
                     </div>
                     <div class="text-right">
                         <p class="text-sm text-gray-500 mb-1">Tổng cộng</p>
@@ -176,7 +178,7 @@ foreach ($orders as $o) {
                 <tr>
                     <td class="px-6 py-4 text-sm font-bold text-gray-900">#DH${o.id.toString().padStart(4, '0')}</td>
                     <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900 font-medium">${o.customer_name}</div>
+                        <div class="text-sm text-gray-900 font-medium">${esc(o.customer_name)}</div>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">${dateStr}</td>
                     <td class="px-6 py-4 text-sm font-bold text-primary">${formatMoney(o.total_amount)}</td>
@@ -215,15 +217,17 @@ foreach ($orders as $o) {
 
         document.getElementById('detail-modal-title').innerText = `Chi Tiết Đơn Hàng #DH${order.id.toString().padStart(4, '0')}`;
         document.getElementById('detail-customer-name').innerText = order.customer_name;
+        document.getElementById('detail-customer-contact').innerText = [order.phone, order.address].filter(Boolean).join(' · ');
+        document.getElementById('detail-payment-method').innerText = 'Thanh toán: ' + order.payment_method;
         document.getElementById('detail-total-amount').innerText = formatMoney(order.total_amount);
 
         const items = dbOrderDetails[orderId] || [];
         const itemsHtml = items.map(item => `
             <div class="flex items-center justify-between p-3 border border-gray-100 rounded-xl bg-white shadow-sm">
                 <div class="flex items-center">
-                    <img src="${item.img}" class="w-12 h-12 object-contain rounded border border-gray-100 bg-gray-50 mr-3">
+                    <img src="${esc(item.img)}" class="w-12 h-12 object-contain rounded border border-gray-100 bg-gray-50 mr-3">
                     <div>
-                        <p class="text-sm font-medium text-gray-900 line-clamp-1">${item.name}</p>
+                        <p class="text-sm font-medium text-gray-900 line-clamp-1">${esc(item.name)}</p>
                         <p class="text-xs text-gray-500">Đơn giá: ${formatMoney(item.price)}</p>
                     </div>
                 </div>
