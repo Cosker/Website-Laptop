@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/config/banks.php';
+require_once __DIR__ . '/config/order_status.php';
 require_once __DIR__ . '/data/products.php';
 require_once __DIR__ . '/data/articles.php';
 ?>
@@ -468,12 +469,35 @@ require_once __DIR__ . '/data/articles.php';
             navigate('home');
         }
 
-        const ORDER_STATUS = {
-            pending: { label: 'Chờ xác nhận', cls: 'bg-amber-50 text-amber-700' },
-            processing: { label: 'Đang giao hàng', cls: 'bg-blue-50 text-blue-700' },
-            completed: { label: 'Hoàn thành', cls: 'bg-green-50 text-green-700' },
-            cancelled: { label: 'Đã huỷ', cls: 'bg-red-50 text-red-700' }
-        };
+        // Trạng thái đơn hàng (config/order_status.php) và các bước của đơn bình thường
+        const ORDER_STATUS = <?= json_encode(ORDER_STATUSES, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        const ORDER_STEPS = <?= json_encode(ORDER_STEPS) ?>;
+
+        // Thanh tiến trình: Chờ xác nhận -> Đã xác nhận -> Đang giao -> Đã giao
+        function orderProgressHTML(order) {
+            const status = ORDER_STATUS[order.status] || ORDER_STATUS.pending;
+            if (order.status === 'cancelled') {
+                return `<div class="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 text-sm"><i class="fa-solid ${status.icon}"></i>${escapeHtml(status.desc)}</div>`;
+            }
+
+            const current = ORDER_STEPS.indexOf(order.status);
+            const steps = ORDER_STEPS.map((key, i) => {
+                const done = i <= current;
+                const circle = done ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400';
+                const text = i === current ? 'text-primary font-semibold' : (done ? 'text-gray-700' : 'text-gray-400');
+                const line = i < ORDER_STEPS.length - 1
+                    ? `<div class="flex-1 h-1 mx-1 sm:mx-2 rounded ${i < current ? 'bg-primary' : 'bg-gray-200'}"></div>` : '';
+                return `
+                    <div class="flex flex-col items-center w-16 sm:w-20 shrink-0">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center ${circle}"><i class="fa-solid ${ORDER_STATUS[key].icon} text-sm"></i></div>
+                        <span class="text-[11px] sm:text-xs mt-1.5 text-center leading-tight ${text}">${ORDER_STATUS[key].label}</span>
+                    </div>${line ? `<div class="flex-1 flex items-center h-9">${line}</div>` : ''}`;
+            }).join('');
+
+            return `
+                <div class="flex items-start">${steps}</div>
+                <p class="text-xs text-gray-500 mt-3"><i class="fa-solid fa-circle-info mr-1"></i>${escapeHtml(status.desc)}</p>`;
+        }
 
         async function renderAccount() {
             if (!currentUser) {
@@ -512,8 +536,9 @@ require_once __DIR__ . '/data/articles.php';
                             <p class="font-bold text-dark">Đơn hàng #DH${String(order.id).padStart(4, '0')}</p>
                             <p class="text-xs text-gray-500 mt-1">${new Date(order.createdAt.replace(' ', 'T')).toLocaleString('vi-VN')}</p>
                         </div>
-                        <span class="text-xs font-semibold px-3 py-1 rounded-full ${status.cls}">${status.label}</span>
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full ${status.badge}"><i class="fa-solid ${status.icon} mr-1"></i>${status.label}</span>
                     </div>
+                    <div class="mb-4">${orderProgressHTML(order)}</div>
                     <div class="space-y-2">
                         ${order.items.map(item => `
                             <div class="flex items-center gap-3">

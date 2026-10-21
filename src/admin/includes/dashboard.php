@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/order_status.php';
 
 // 1. Doanh thu tháng này (Chỉ tính đơn hoàn thành)
 $sqlRevenue = "SELECT SUM(total_amount) as total FROM orders WHERE status = 'completed' AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())";
@@ -28,13 +29,7 @@ $lowStockProducts = $pdo->query($sqlLowStock)->fetch(PDO::FETCH_ASSOC)['count'] 
 $sqlRecentOrders = "SELECT id, customer_name, total_amount, status FROM orders ORDER BY created_at DESC LIMIT 5";
 $recentOrders = $pdo->query($sqlRecentOrders)->fetchAll(PDO::FETCH_ASSOC);
 
-// Map trạng thái để hiển thị màu sắc
-$statusMap = [
-    'pending' => ['label' => 'Chờ xử lý', 'class' => 'bg-yellow-100 text-yellow-700'],
-    'processing' => ['label' => 'Đang giao', 'class' => 'bg-blue-100 text-blue-700'],
-    'completed' => ['label' => 'Hoàn thành', 'class' => 'bg-green-100 text-green-700'],
-    'cancelled' => ['label' => 'Đã hủy', 'class' => 'bg-red-100 text-red-700']
-];
+// Nhãn + màu trạng thái lấy từ config/order_status.php
 
 // 6. Dữ liệu biểu đồ 7 ngày gần nhất CÓ DOANH THU
 $sqlChart = "SELECT DATE(created_at) as order_date, SUM(total_amount) as total 
@@ -142,8 +137,8 @@ if (count($chartDataQuery) > 0) {
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-bold text-primary"><?= number_format($order['total_amount'], 0, ',', '.') ?> ₫</p>
-                                <span class="inline-block px-2 py-1 <?= $statusMap[$order['status']]['class'] ?> text-[10px] font-bold rounded mt-1">
-                                    <?= $statusMap[$order['status']]['label'] ?>
+                                <span class="inline-block px-2 py-1 <?= ORDER_STATUSES[$order['status']]['badge'] ?> text-[10px] font-bold rounded mt-1">
+                                    <?= ORDER_STATUSES[$order['status']]['label'] ?>
                                 </span>
                             </div>
                         </div>

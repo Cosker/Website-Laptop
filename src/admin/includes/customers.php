@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/order_status.php';
 
 // 1. LẤY DANH SÁCH KHÁCH HÀNG KÈM TỔNG ĐƠN VÀ TỔNG CHI TIÊU
 $sqlCustomers = "SELECT u.id, u.name, u.email, u.created_at,
@@ -153,12 +154,8 @@ $avgSpent = $totalCustomers > 0 ? round($totalSpentAll / $totalCustomers) : 0;
     const dbCustomers = <?= json_encode($customers) ?>;
     const dbCustomerOrdersMap = <?= json_encode($customerOrdersMap) ?>;
 
-    const orderStatusMap = {
-        'pending': { text: 'Chờ xử lý', class: 'bg-yellow-100 text-yellow-800' },
-        'processing': { text: 'Đang giao', class: 'bg-blue-100 text-blue-800' },
-        'completed': { text: 'Hoàn thành', class: 'bg-green-100 text-green-800' },
-        'cancelled': { text: 'Đã hủy', class: 'bg-red-100 text-red-800' }
-    };
+    // Nhãn + màu trạng thái lấy từ config/order_status.php
+    const orderStatusMap = <?= json_encode(ORDER_STATUSES, JSON_UNESCAPED_UNICODE) ?>;
 
     function renderCustomerTable() {
         const searchInput = document.getElementById('admin-customer-search');
@@ -227,7 +224,7 @@ $avgSpent = $totalCustomers > 0 ? round($totalSpentAll / $totalCustomers) : 0;
             container.innerHTML = '<p class="text-center text-gray-500 py-6 text-sm">Khách hàng này chưa thực hiện đơn hàng nào.</p>';
         } else {
             container.innerHTML = orders.map(o => {
-                const st = orderStatusMap[o.status] || { text: o.status, class: 'bg-gray-100 text-gray-800' };
+                const st = orderStatusMap[o.status] || { label: o.status, badge: 'bg-gray-100 text-gray-800' };
                 const dt = new Date(o.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
                 return `
                     <div class="flex items-center justify-between p-4 border border-gray-100 rounded-xl bg-white shadow-sm">
@@ -237,7 +234,7 @@ $avgSpent = $totalCustomers > 0 ? round($totalSpentAll / $totalCustomers) : 0;
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-primary text-sm">${formatMoney(o.total_amount)}</p>
-                            <span class="inline-block px-2 py-0.5 text-[11px] font-semibold rounded-full mt-1 ${st.class}">${st.text}</span>
+                            <span class="inline-block px-2 py-0.5 text-[11px] font-semibold rounded-full mt-1 ${st.badge}">${st.label}</span>
                         </div>
                     </div>
                 `;

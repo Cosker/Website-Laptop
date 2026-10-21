@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/order_status.php';
 
 // 1. LẤY DANH SÁCH ĐƠN HÀNG
 $sqlOrders = "SELECT * FROM orders ORDER BY created_at DESC";
@@ -19,14 +20,10 @@ foreach ($details as $d) {
 
 // 3. ĐẾM THỐNG KÊ NHANH CÁC TRẠNG THÁI
 $countAll = count($orders);
-$countPending = 0; $countProcessing = 0; $countCompleted = 0; $countCancelled = 0;
-
+$statusCounts = array_fill_keys(array_keys(ORDER_STATUSES), 0);
 foreach ($orders as $o) {
-    switch ($o['status']) {
-        case 'pending': $countPending++; break;
-        case 'processing': $countProcessing++; break;
-        case 'completed': $countCompleted++; break;
-        case 'cancelled': $countCancelled++; break;
+    if (isset($statusCounts[$o['status']])) {
+        $statusCounts[$o['status']]++;
     }
 }
 ?>
@@ -43,10 +40,9 @@ foreach ($orders as $o) {
         <!-- Các nút Filter -->
         <div class="p-4 border-b border-gray-100 flex flex-wrap gap-2" id="order-filters">
             <button onclick="filterOrders('all')" class="order-filter-btn px-4 py-2 rounded-lg text-sm font-medium border transition-colors bg-blue-50 text-primary border-blue-100" data-filter="all">Tất cả (<?= $countAll ?>)</button>
-            <button onclick="filterOrders('pending')" class="order-filter-btn px-4 py-2 bg-white text-gray-600 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50" data-filter="pending">Chờ xử lý (<?= $countPending ?>)</button>
-            <button onclick="filterOrders('processing')" class="order-filter-btn px-4 py-2 bg-white text-gray-600 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50" data-filter="processing">Đang giao (<?= $countProcessing ?>)</button>
-            <button onclick="filterOrders('completed')" class="order-filter-btn px-4 py-2 bg-white text-gray-600 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50" data-filter="completed">Hoàn thành (<?= $countCompleted ?>)</button>
-            <button onclick="filterOrders('cancelled')" class="order-filter-btn px-4 py-2 bg-white text-gray-600 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50" data-filter="cancelled">Đã hủy (<?= $countCancelled ?>)</button>
+            <?php foreach (ORDER_STATUSES as $key => $info): ?>
+                <button onclick="filterOrders('<?= $key ?>')" class="order-filter-btn px-4 py-2 bg-white text-gray-600 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50" data-filter="<?= $key ?>"><?= $info['label'] ?> (<?= $statusCounts[$key] ?>)</button>
+            <?php endforeach; ?>
         </div>
 
         <div class="overflow-x-auto">
@@ -115,23 +111,17 @@ foreach ($orders as $o) {
                 
                 <p class="text-gray-600 text-sm mb-4">Đơn hàng: <span class="font-bold text-dark" id="update_order_code"></span></p>
 
-                <div class="space-y-4">
-                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-yellow-50">
-                        <input type="radio" name="status" value="pending" id="status_pending" class="w-4 h-4 text-primary">
-                        <span class="ml-3 font-medium text-yellow-700">Chờ xử lý</span>
-                    </label>
-                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50">
-                        <input type="radio" name="status" value="processing" id="status_processing" class="w-4 h-4 text-primary">
-                        <span class="ml-3 font-medium text-blue-700">Đang giao hàng</span>
-                    </label>
-                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-green-50">
-                        <input type="radio" name="status" value="completed" id="status_completed" class="w-4 h-4 text-primary">
-                        <span class="ml-3 font-medium text-green-700">Hoàn thành</span>
-                    </label>
-                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-red-50">
-                        <input type="radio" name="status" value="cancelled" id="status_cancelled" class="w-4 h-4 text-primary">
-                        <span class="ml-3 font-medium text-red-700">Hủy đơn</span>
-                    </label>
+                <div class="space-y-3">
+                    <?php foreach (ORDER_STATUSES as $key => $info): ?>
+                        <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="status" value="<?= $key ?>" class="w-4 h-4 text-primary">
+                            <span class="ml-3 w-8 h-8 rounded-full flex items-center justify-center <?= $info['badge'] ?>"><i class="fa-solid <?= $info['icon'] ?> text-sm"></i></span>
+                            <span class="ml-3">
+                                <span class="block font-medium text-gray-800"><?= $info['label'] ?></span>
+                                <span class="block text-xs text-gray-500"><?= $info['desc'] ?></span>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
                 </div>
 
                 <div class="mt-8 flex justify-end space-x-3">
@@ -150,12 +140,8 @@ foreach ($orders as $o) {
     const dbOrders = <?= json_encode($orders) ?>;
     const dbOrderDetails = <?= json_encode($orderDetailsMap) ?>;
 
-    const statusMap = {
-        'pending': { text: 'Chờ xử lý', class: 'bg-yellow-100 text-yellow-800' },
-        'processing': { text: 'Đang giao', class: 'bg-blue-100 text-blue-800' },
-        'completed': { text: 'Hoàn thành', class: 'bg-green-100 text-green-800' },
-        'cancelled': { text: 'Đã hủy', class: 'bg-red-100 text-red-800' }
-    };
+    // Trạng thái đơn hàng lấy từ config/order_status.php
+    const orderStatuses = <?= json_encode(ORDER_STATUSES, JSON_UNESCAPED_UNICODE) ?>;
 
     function renderOrdersTable(filterStatus = 'all') {
         const tbody = document.getElementById('admin-order-list');
@@ -171,7 +157,7 @@ foreach ($orders as $o) {
         }
 
         tbody.innerHTML = filteredOrders.map(o => {
-            const statusInfo = statusMap[o.status];
+            const statusInfo = orderStatuses[o.status] || { label: o.status, badge: 'bg-gray-100 text-gray-700', icon: 'fa-circle' };
             const dateStr = new Date(o.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
             
             return `
@@ -183,7 +169,7 @@ foreach ($orders as $o) {
                     <td class="px-6 py-4 text-sm text-gray-500">${dateStr}</td>
                     <td class="px-6 py-4 text-sm font-bold text-primary">${formatMoney(o.total_amount)}</td>
                     <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.class}">${statusInfo.text}</span>
+                        <span class="px-2.5 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full ${statusInfo.badge}"><i class="fa-solid ${statusInfo.icon} mr-1.5"></i>${statusInfo.label}</span>
                     </td>
                     <td class="px-6 py-4 text-right text-sm font-medium">
                         <button onclick="openOrderStatusModal(${o.id}, '${o.status}')" class="text-blue-600 hover:text-blue-900 px-3 py-1.5 rounded mr-2 transition-colors border border-blue-200 hover:bg-blue-50" title="Cập nhật trạng thái">
@@ -258,10 +244,9 @@ foreach ($orders as $o) {
         document.getElementById('update_order_id').value = orderId;
         document.getElementById('update_order_code').innerText = `#DH${orderId.toString().padStart(4, '0')}`;
         
-        document.getElementById('status_pending').checked = (currentStatus === 'pending');
-        document.getElementById('status_processing').checked = (currentStatus === 'processing');
-        document.getElementById('status_completed').checked = (currentStatus === 'completed');
-        document.getElementById('status_cancelled').checked = (currentStatus === 'cancelled');
+        document.querySelectorAll('#order-status-modal input[name="status"]').forEach(input => {
+            input.checked = (input.value === currentStatus);
+        });
 
         const modal = document.getElementById('order-status-modal');
         const content = document.getElementById('order-status-content');

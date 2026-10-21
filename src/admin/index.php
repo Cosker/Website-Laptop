@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/order_status.php';
 
 // Chỉ tài khoản admin mới được vào trang quản trị
 if (!isAdmin()) {
@@ -79,9 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     elseif ($action === 'update_order_status') {
         $order_id = (int)($_POST['order_id'] ?? 0);
         $status = $_POST['status'] ?? '';
-        $valid_statuses = ['pending', 'processing', 'completed', 'cancelled'];
-        
-        if ($order_id > 0 && in_array($status, $valid_statuses)) {
+        if ($order_id > 0 && isset(ORDER_STATUSES[$status])) {
             try {
                 $pdo->beginTransaction();
                 $stmt = $pdo->prepare("SELECT status FROM orders WHERE id = ? FOR UPDATE");
@@ -101,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
                 $stmt->execute([$status, $order_id]);
                 $pdo->commit();
-                $toastMessage = "showToast('Cập nhật trạng thái đơn hàng thành công!', 'success');";
+                $toastMessage = "showToast('Đơn #DH" . str_pad((string)$order_id, 4, '0', STR_PAD_LEFT) . " chuyển sang: " . ORDER_STATUSES[$status]['label'] . "', 'success');";
             } catch (PDOException $e) {
                 if ($pdo->inTransaction()) $pdo->rollBack();
                 $toastMessage = "showToast('Lỗi khi cập nhật đơn hàng: " . addslashes($e->getMessage()) . "', 'error');";
