@@ -1,12 +1,28 @@
 <?php
 // API đơn hàng cho trang khách (bắt buộc đăng nhập):
 //   GET  -> danh sách đơn của người dùng hiện tại
-//   POST -> đặt hàng: { items: [{id, quantity}], receiver_name, phone, address, payment }
+//   POST -> đặt hàng: { items: [{id, quantity}], receiver_name, phone, address, payment: 'COD' | 'BANK', bank }
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/banks.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-const PAYMENT_METHODS = ['COD', 'Chuyển khoản ngân hàng'];
+// Thông tin chuyển khoản trả về cho khách (null nếu không phải đơn chuyển khoản)
+function bankTransferInfo(?string $bankCode, int $orderId, int $amount): ?array
+{
+    if (!$bankCode || !isset(SHOP_BANKS[$bankCode])) {
+        return null;
+    }
+    $bank = SHOP_BANKS[$bankCode];
+    return [
+        'bank' => $bank['name'],
+        'accountNo' => $bank['account_no'],
+        'accountName' => $bank['account_name'],
+        'branch' => $bank['branch'],
+        'amount' => $amount,
+        'content' => 'DH' . str_pad((string)$orderId, 4, '0', STR_PAD_LEFT),
+    ];
+}
 
 function respond(bool $ok, string $message, array $extra = [], int $status = 200): void
 {
@@ -21,7 +37,7 @@ if (!$user) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $stmt = $pdo->prepare("SELECT id, customer_name, phone, address, total_amount, payment_method, status, created_at
+    $stmt = $pdo->prepare("SELECT id, customer_name, phone, address, total_amount, payment_method, bank_code, status, created_at
                            FROM orders WHERE user_id = ? ORDER BY created_at DESC, id DESC");
     $stmt->execute([$user['id']]);
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -52,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'address' => $o['address'],
         'total' => (int)$o['total_amount'],
         'payment' => $o['payment_method'],
+        'transfer' => bankTransferInfo($o['bank_code'], (int)$o['id'], (int)$o['total_amount']),
         'status' => $o['status'],
         'createdAt' => $o['created_at'],
         'items' => $items[$o['id']] ?? [],
@@ -67,11 +84,20 @@ $receiverName = trim($input['receiver_name'] ?? '');
 $phone = trim($input['phone'] ?? '');
 $address = trim($input['address'] ?? '');
 $payment = $input['payment'] ?? 'COD';
+$bankCode = null;
 
 if ($receiverName === '' || $address === '' || !preg_match('/^[0-9+() .-]{9,16}$/', $phone)) {
     respond(false, 'Vui lòng kiểm tra đầy đủ họ tên, số điện thoại và địa chỉ nhận hàng.', [], 422);
 }
-if (!in_array($payment, PAYMENT_METHODS, true)) {
+if ($payment === 'COD') {
+    $paymentMethod = 'COD';
+} elseif ($payment === 'BANK') {
+    $bankCode = $input['bank'] ?? '';
+    if (!isset(SHOP_BANKS[$bankCode])) {
+        respond(false, 'Vui lòng chọn ngân hàng để chuyển khoản.', [], 422);
+    }
+    $paymentMethod = 'Chuyển khoản ' . SHOP_BANKS[$bankCode]['name'];
+} else {
     respond(false, 'Phương thức thanh toán không hợp lệ.', [], 422);
 }
 
@@ -113,9 +139,9 @@ try {
         $total += $products[$id]['price'] * $qty;
     }
 
-    $pdo->prepare("INSERT INTO orders (user_id, customer_name, phone, address, total_amount, payment_method, status)
-                   VALUES (?, ?, ?, ?, ?, ?, 'pending')")
-        ->execute([$user['id'], $receiverName, $phone, $address, $total, $payment]);
+    $pdo->prepare("INSERT INTO orders (user_id, customer_name, phone, address, total_amount, payment_method, bank_code, status)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')")
+        ->execute([$user['id'], $receiverName, $phone, $address, $total, $paymentMethod, $bankCode]);
     $orderId = (int)$pdo->lastInsertId();
 
     $insertDetail = $pdo->prepare("INSERT INTO order_details (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
@@ -140,6 +166,7 @@ setCurrentUser(['phone' => $phone, 'address' => $address] + $user);
 respond(true, 'Đặt hàng thành công.', [
     'orderId' => $orderId,
     'total' => $total,
+    'transfer' => bankTransferInfo($bankCode, $orderId, $total),
     'user' => currentUser(),
     'stock' => array_map(fn($id) => ['id' => $id, 'stock' => $products[$id]['stock'] - $quantities[$id]], array_keys($quantities)),
 ]);

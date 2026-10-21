@@ -21,12 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stock = (int)($_POST['stock'] ?? 0);
         $img = trim($_POST['img'] ?? '');
         $spec = trim($_POST['spec'] ?? '');
+        $specs = trim($_POST['specs'] ?? '');
         $description = trim($_POST['description'] ?? '');
 
         if (!empty($name) && $brand_id > 0 && $price >= 0 && $stock >= 0) {
             try {
-                $stmt = $pdo->prepare("INSERT INTO products (brand_id, name, price, stock, img, spec, description) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$brand_id, $name, $price, $stock, $img, $spec, $description]);
+                $stmt = $pdo->prepare("INSERT INTO products (brand_id, name, price, stock, img, spec, specs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$brand_id, $name, $price, $stock, $img, $spec, $specs, $description]);
                 $toastMessage = "showToast('Thêm sản phẩm thành công!', 'success');";
             } catch (PDOException $e) {
                 $toastMessage = "showToast('Lỗi khi thêm sản phẩm: " . addslashes($e->getMessage()) . "', 'error');";
@@ -44,12 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stock = (int)($_POST['stock'] ?? 0);
         $img = trim($_POST['img'] ?? '');
         $spec = trim($_POST['spec'] ?? '');
+        $specs = trim($_POST['specs'] ?? '');
         $description = trim($_POST['description'] ?? '');
 
         if ($id > 0 && !empty($name) && $brand_id > 0 && $price >= 0 && $stock >= 0) {
             try {
-                $stmt = $pdo->prepare("UPDATE products SET brand_id = ?, name = ?, price = ?, stock = ?, img = ?, spec = ?, description = ? WHERE id = ?");
-                $stmt->execute([$brand_id, $name, $price, $stock, $img, $spec, $description, $id]);
+                $stmt = $pdo->prepare("UPDATE products SET brand_id = ?, name = ?, price = ?, stock = ?, img = ?, spec = ?, specs = ?, description = ? WHERE id = ?");
+                $stmt->execute([$brand_id, $name, $price, $stock, $img, $spec, $specs, $description, $id]);
                 $toastMessage = "showToast('Cập nhật sản phẩm thành công!', 'success');";
             } catch (PDOException $e) {
                 $toastMessage = "showToast('Lỗi khi cập nhật: " . addslashes($e->getMessage()) . "', 'error');";

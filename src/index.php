@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/config/banks.php';
 require_once __DIR__ . '/data/products.php';
 require_once __DIR__ . '/data/articles.php';
 ?>
@@ -94,6 +95,9 @@ require_once __DIR__ . '/data/articles.php';
 
         // Bài viết: lấy từ bảng articles trong DB (data/articles.php), quản lý ở trang admin
         const articles = <?= json_encode(getArticles(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+        // Tài khoản ngân hàng của cửa hàng (config/banks.php)
+        const shopBanks = <?= json_encode(SHOP_BANKS, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
         // 2. STATE VARIABLES
         // Giỏ hàng lưu ở trình duyệt; giá và tồn kho luôn lấy lại theo dữ liệu mới nhất từ DB
@@ -289,6 +293,32 @@ require_once __DIR__ . '/data/articles.php';
             document.getElementById('bestseller-grid').innerHTML = top.map(p => productCardHTML(p, 'Bán chạy')).join('');
         }
 
+        // Banner: số mẫu, các hãng và 1 sản phẩm nổi bật (bán chạy nhất còn hàng)
+        function renderHero() {
+            document.getElementById('hero-product-count').innerText = Math.floor(products.length / 10) * 10 || products.length;
+            document.getElementById('hero-brand-names').innerText = brands.map(b => b.short).join(', ');
+
+            const p = [...products].filter(x => x.stock > 0).sort((a, b) => b.sold - a.sold)[0];
+            if (!p) return;
+            document.getElementById('hero-product').innerHTML = `
+                <div class="ml-auto max-w-md bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-6 text-white shadow-2xl cursor-pointer hover:bg-white/15 transition-colors" onclick="navigate('detail', ${p.id})">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-semibold bg-orange-500 px-2.5 py-1 rounded-full"><i class="fa-solid fa-fire mr-1"></i>Bán chạy nhất</span>
+                        <span class="text-xs text-gray-300">Đã bán ${p.sold}</span>
+                    </div>
+                    <div class="bg-white rounded-xl h-48 flex items-center justify-center p-4 mb-4">
+                        <img src="${escapeHtml(p.img)}" alt="${escapeHtml(p.name)}" class="max-h-full object-contain">
+                    </div>
+                    <p class="text-sm text-blue-300 font-semibold">${escapeHtml(brandName(p.brand))}</p>
+                    <h3 class="text-xl font-bold mb-1">${escapeHtml(p.name)}</h3>
+                    <p class="text-sm text-gray-300 mb-4 line-clamp-1">${escapeHtml(p.spec)}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold">${formatCurrency(p.price)}</span>
+                        <span class="text-sm font-semibold text-blue-300">Xem chi tiết <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                    </div>
+                </div>`;
+        }
+
         function searchProducts(value) {
             currentSearch = String(value || '').trim().toLocaleLowerCase('vi');
             renderProducts();
@@ -315,8 +345,27 @@ require_once __DIR__ . '/data/articles.php';
             document.getElementById('detail-brand').innerText = brandName(p.brand);
             document.getElementById('detail-name').innerText = p.name;
             document.getElementById('detail-price').innerText = formatCurrency(p.price);
-            document.getElementById('detail-spec').innerText = p.spec;
-            document.getElementById('detail-desc').innerText = p.desc;
+            document.getElementById('detail-spec').innerText = p.spec || 'Đang cập nhật';
+
+            const stockText = p.stock > 0
+                ? `<span class="text-green-600 font-medium"><i class="fa-solid fa-circle-check mr-1"></i>Còn hàng (${p.stock})</span>`
+                : '<span class="text-red-600 font-medium"><i class="fa-solid fa-circle-xmark mr-1"></i>Hết hàng</span>';
+            document.getElementById('detail-meta').innerHTML =
+                `${stockText}<span><i class="fa-solid fa-fire text-orange-500 mr-1"></i>Đã bán ${p.sold}</span><span>Mã: TN${String(p.id).padStart(4, '0')}</span>`;
+
+            // Mô tả: mỗi dòng 1 đoạn; đoạn đầu hiện ngắn gọn cạnh giá
+            const paragraphs = (p.desc || '').split('\n').map(s => s.trim()).filter(Boolean);
+            document.getElementById('detail-summary').innerText = paragraphs[0] || 'Đang cập nhật mô tả.';
+            document.getElementById('detail-desc').innerHTML = paragraphs.length
+                ? paragraphs.map(s => `<p>${escapeHtml(s)}</p>`).join('')
+                : '<p class="text-gray-400">Đang cập nhật mô tả.</p>';
+
+            const specRows = [['Hãng', brandName(p.brand)], ...p.specs];
+            document.getElementById('detail-specs').innerHTML = specRows.map(([label, value]) => `
+                <tr>
+                    <td class="py-2.5 pr-4 text-gray-500 align-top whitespace-nowrap">${escapeHtml(label)}</td>
+                    <td class="py-2.5 text-dark font-medium">${escapeHtml(value)}</td>
+                </tr>`).join('');
             document.getElementById('btn-add-cart').onclick = () => addToCart(p.id);
             document.getElementById('btn-buy-now').onclick = () => buyNow(p.id);
         }
@@ -470,6 +519,8 @@ require_once __DIR__ . '/data/articles.php';
                         <span class="text-sm text-gray-500">Thanh toán: ${escapeHtml(order.payment)}</span>
                         <strong class="text-primary">${formatCurrency(order.total)}</strong>
                     </div>
+                    ${order.transfer && order.status === 'pending' ? `
+                        <div class="mt-3 p-3 rounded-lg bg-blue-50 border border-blue-100 text-sm text-gray-700 whitespace-pre-line"><p class="font-semibold text-dark mb-1"><i class="fa-solid fa-building-columns text-primary mr-1"></i>Chờ chuyển khoản</p>${escapeHtml(transferText(order.transfer))}</div>` : ''}
                 </article>`;
             }).join('');
         }
@@ -641,6 +692,44 @@ require_once __DIR__ . '/data/articles.php';
 
             document.getElementById('checkout-subtotal').innerText = formatCurrency(total);
             document.getElementById('checkout-total').innerText = formatCurrency(total);
+            checkoutTotal = total;
+            updatePaymentUI();
+        }
+
+        // Thanh toán: COD hoặc chuyển khoản (chọn 1 ngân hàng của cửa hàng)
+        let checkoutTotal = 0;
+
+        function updatePaymentUI() {
+            const payment = document.querySelector('input[name="payment"]:checked')?.value;
+            const bankCode = document.querySelector('input[name="bank"]:checked')?.value;
+
+            document.querySelectorAll('.payment-option').forEach(label => {
+                const checked = label.querySelector('input').checked;
+                label.classList.toggle('border-primary', checked);
+                label.classList.toggle('bg-blue-50/50', checked);
+                label.classList.toggle('border-gray-200', !checked);
+            });
+            document.querySelectorAll('.bank-option').forEach(label => {
+                const checked = label.querySelector('input').checked;
+                label.classList.toggle('border-primary', checked);
+                label.classList.toggle('bg-blue-50/50', checked);
+                label.classList.toggle('border-gray-200', !checked);
+                label.querySelector('.bank-check').classList.toggle('hidden', !checked);
+            });
+
+            document.getElementById('bank-picker').classList.toggle('hidden', payment !== 'BANK');
+            const bank = shopBanks[bankCode];
+            document.getElementById('bank-info').classList.toggle('hidden', !bank);
+            if (bank) {
+                document.getElementById('bank-info-name').innerText = `${bank.name} - ${bank.branch}`;
+                document.getElementById('bank-info-account').innerText = bank.account_no;
+                document.getElementById('bank-info-holder').innerText = bank.account_name;
+                document.getElementById('bank-info-amount').innerText = formatCurrency(checkoutTotal);
+            }
+        }
+
+        function transferText(t) {
+            return `Ngân hàng: ${t.bank} (${t.branch})\nSố tài khoản: ${t.accountNo}\nChủ tài khoản: ${t.accountName}\nSố tiền: ${formatCurrency(t.amount)}\nNội dung: ${t.content}`;
         }
 
         let placingOrder = false;
@@ -664,16 +753,22 @@ require_once __DIR__ . '/data/articles.php';
                 showModal('Giỏ hàng trống', 'Không có sản phẩm để đặt hàng.', 'error');
                 return;
             }
+            const payment = document.querySelector('input[name="payment"]:checked')?.value || 'COD';
+            const bank = document.querySelector('input[name="bank"]:checked')?.value || '';
+            if (payment === 'BANK' && !bank) {
+                showModal('Chưa chọn ngân hàng', 'Vui lòng chọn ngân hàng bạn muốn chuyển khoản đến.', 'error');
+                return;
+            }
             if (placingOrder) return;
             placingOrder = true;
 
-            const paymentInput = document.querySelector('input[name="payment"]:checked');
             const result = await api('api/orders.php', {
                 items: items.map(item => ({ id: item.id, quantity: item.quantity })),
                 receiver_name: form.elements.receiver_name.value.trim(),
                 phone: form.elements.phone.value.trim(),
                 address: form.elements.address.value.trim(),
-                payment: paymentInput ? paymentInput.value : 'COD'
+                payment,
+                bank
             });
             placingOrder = false;
 
@@ -696,9 +791,14 @@ require_once __DIR__ . '/data/articles.php';
             }
             buyNowItem = null;
             form.reset();
+            document.querySelectorAll('input[name="bank"]').forEach(input => input.checked = false);
+            updatePaymentUI();
             updateAuthUI();
             renderProducts();
-            showModal('Đặt hàng thành công!', `Đơn hàng #DH${String(result.orderId).padStart(4, '0')} đã được ghi nhận. Tổng tiền: ${formatCurrency(result.total)}. Bạn có thể theo dõi trong Tài khoản của tôi.`, 'success');
+            const orderCode = `#DH${String(result.orderId).padStart(4, '0')}`;
+            showModal('Đặt hàng thành công!', result.transfer
+                ? `Đơn hàng ${orderCode} đã được ghi nhận. Vui lòng chuyển khoản theo thông tin sau:\n\n${transferText(result.transfer)}\n\nThông tin này cũng có trong Tài khoản của tôi.`
+                : `Đơn hàng ${orderCode} đã được ghi nhận. Tổng tiền: ${formatCurrency(result.total)}. Bạn có thể theo dõi trong Tài khoản của tôi.`, 'success');
             navigate('account');
         }
 
@@ -708,6 +808,7 @@ require_once __DIR__ . '/data/articles.php';
             renderProducts();
             renderHomeBrands();
             renderBestSellers();
+            renderHero();
             renderHomeArticles();
             renderBlog();
             updateAuthUI();

@@ -3,22 +3,32 @@
             <!-- Banner -->
             <div class="relative bg-dark overflow-hidden">
                 <div class="absolute inset-0">
-                    <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" alt="Banner" class="w-full h-full object-cover opacity-40">
-                    <div class="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent"></div>
+                    <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1600&q=70" alt="" class="w-full h-full object-cover opacity-25">
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/90 to-gray-900/40"></div>
                 </div>
-                <div class="relative container mx-auto px-4 lg:px-8 py-24 lg:py-32 flex items-center">
-                    <div class="w-full md:w-2/3 lg:w-1/2">
-                        <span class="inline-block py-1 px-3 rounded-full bg-primary/20 text-blue-300 font-semibold text-sm mb-4 border border-primary/30">Mùa Tựu Trường 2023</span>
-                        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-                            Đỉnh Cao Công Nghệ, <br><span class="text-primary">Dẫn Lối Tương Lai</span>
+                <div class="relative container mx-auto px-4 lg:px-8 py-14 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+                    <div>
+                        <span class="inline-block py-1 px-3 rounded-full bg-primary/20 text-blue-300 font-semibold text-sm mb-4 border border-primary/30">
+                            <i class="fa-solid fa-tags mr-1"></i> Ưu đãi tháng <?= date('m/Y') ?>
+                        </span>
+                        <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-5">
+                            Laptop chính hãng<br><span class="text-blue-400">cho học tập &amp; công việc</span>
                         </h1>
-                        <p class="text-lg text-gray-300 mb-8">
-                            Sở hữu ngay những dòng laptop mạnh mẽ nhất với mức giá ưu đãi cực khủng. Trả góp 0% - Giao hàng hoả tốc 2h.
+                        <p class="text-base md:text-lg text-gray-300 mb-8 max-w-xl">
+                            Hơn <span id="hero-product-count">30</span> mẫu laptop từ <span id="hero-brand-names">các hãng lớn</span>. Bảo hành chính hãng 12 tháng, miễn phí giao hàng toàn quốc.
                         </p>
-                        <button onclick="navigate('products')" class="bg-primary hover:bg-secondary text-white font-semibold py-3 px-8 rounded-lg shadow-lg transition duration-300 flex items-center">
-                            Khám Phá Ngay <i class="fa-solid fa-arrow-right ml-2"></i>
-                        </button>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="navigate('products')" class="bg-primary hover:bg-secondary text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition duration-300 flex items-center">
+                                Xem sản phẩm <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                            <button onclick="document.getElementById('bestseller-grid').scrollIntoView({ behavior: 'smooth', block: 'center' })" class="border border-gray-500 hover:border-white text-gray-200 hover:text-white font-semibold py-3 px-6 rounded-lg transition duration-300 flex items-center">
+                                <i class="fa-solid fa-fire mr-2 text-orange-400"></i> Bán chạy nhất
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- Sản phẩm nổi bật (bán chạy nhất, lấy từ DB) -->
+                    <div id="hero-product" class="hidden lg:block"></div>
                 </div>
             </div>
 
@@ -27,15 +37,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start space-x-4">
                         <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-primary flex-shrink-0 text-xl"><i class="fa-solid fa-truck-fast"></i></div>
-                        <div><h3 class="font-bold text-lg mb-1">Giao Hàng Siêu Tốc</h3><p class="text-gray-500 text-sm">Nhận máy trong 2h tại nội thành</p></div>
+                        <div><h3 class="font-bold text-lg mb-1">Miễn Phí Giao Hàng</h3><p class="text-gray-500 text-sm">Giao toàn quốc, kiểm tra máy trước khi nhận</p></div>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start space-x-4">
-                        <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center text-green-500 flex-shrink-0 text-xl"><i class="fa-solid fa-shield-halved"></i></div>
-                        <div><h3 class="font-bold text-lg mb-1">Bảo Hành 24 Tháng</h3><p class="text-gray-500 text-sm">Lỗi 1 đổi 1 trong 30 ngày đầu</p></div>
+                        <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center text-green-500 flex-shrink-0 text-xl"><i class="fa-solid fa-shield-alt"></i></div>
+                        <div><h3 class="font-bold text-lg mb-1">Bảo Hành Chính Hãng</h3><p class="text-gray-500 text-sm">12 tháng, đổi mới trong 7 ngày nếu lỗi</p></div>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start space-x-4">
                         <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center text-purple-500 flex-shrink-0 text-xl"><i class="fa-solid fa-credit-card"></i></div>
-                        <div><h3 class="font-bold text-lg mb-1">Trả Góp 0%</h3><p class="text-gray-500 text-sm">Thủ tục nhanh gọn, duyệt 5 phút</p></div>
+                        <div><h3 class="font-bold text-lg mb-1">Thanh Toán Linh Hoạt</h3><p class="text-gray-500 text-sm">Trả tiền khi nhận hàng hoặc chuyển khoản</p></div>
                     </div>
                 </div>
             </div>
@@ -46,7 +56,7 @@
                     <h2 class="text-2xl md:text-3xl font-bold text-dark mb-1">Mua Theo Hãng</h2>
                     <p class="text-gray-600 text-sm">Chọn thương hiệu laptop bạn yêu thích</p>
                 </div>
-                <div id="home-brands" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4"></div>
+                <div id="home-brands" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"></div>
             </div>
 
             <!-- Sản phẩm bán chạy -->
@@ -113,7 +123,7 @@
                         <p class="text-gray-500 text-sm">Lắng nghe nhu cầu để gợi ý cấu hình vừa đủ, không bán thừa.</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
-                        <div class="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center text-purple-500 mx-auto mb-4 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div class="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center text-purple-500 mx-auto mb-4 text-2xl"><i class="fa-solid fa-shield-alt"></i></div>
                         <h3 class="font-bold text-lg mb-2">Hậu mãi dài lâu</h3>
                         <p class="text-gray-500 text-sm">Bảo hành 24 tháng, hỗ trợ kỹ thuật và đổi trả trong 30 ngày đầu.</p>
                     </div>
@@ -209,18 +219,20 @@
                         <div class="flex flex-col">
                             <span id="detail-brand" class="inline-block w-max py-1 px-3 rounded-full bg-blue-50 text-primary font-semibold text-xs mb-3"></span>
                             <h1 id="detail-name" class="text-3xl font-bold text-dark mb-3">Product Name</h1>
-                            <div class="flex items-center space-x-2 mb-4 text-sm">
-                                <div class="text-yellow-400"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></div>
-                                <span class="text-gray-500">(12 đánh giá)</span>
-                            </div>
+                            <div id="detail-meta" class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-sm text-gray-500"></div>
                             <div id="detail-price" class="text-3xl font-bold text-primary mb-6">0 ₫</div>
                             <div class="mb-6">
-                                <h3 class="font-semibold text-gray-800 mb-2">Thông số cơ bản:</h3>
+                                <h3 class="font-semibold text-gray-800 mb-2">Cấu hình:</h3>
                                 <p id="detail-spec" class="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg border border-gray-100"></p>
                             </div>
                             <div class="mb-8">
                                 <h3 class="font-semibold text-gray-800 mb-2">Đặc điểm nổi bật:</h3>
-                                <p id="detail-desc" class="text-gray-600 text-sm leading-relaxed"></p>
+                                <p id="detail-summary" class="text-gray-600 text-sm leading-relaxed"></p>
+                                <ul class="mt-3 space-y-1.5 text-sm text-gray-600">
+                                    <li><i class="fa-solid fa-shield-alt text-primary w-5"></i> Bảo hành chính hãng 12 tháng</li>
+                                    <li><i class="fa-solid fa-rotate-left text-primary w-5"></i> Đổi mới trong 7 ngày nếu lỗi nhà sản xuất</li>
+                                    <li><i class="fa-solid fa-truck-fast text-primary w-5"></i> Miễn phí giao hàng toàn quốc</li>
+                                </ul>
                             </div>
                             <!-- Buttons -->
                             <div class="mt-auto grid grid-cols-2 gap-4">
@@ -232,6 +244,20 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Mô tả + Thông số kỹ thuật -->
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
+                    <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                        <h2 class="text-xl font-bold text-dark mb-4">Mô tả sản phẩm</h2>
+                        <div id="detail-desc" class="space-y-3 text-gray-600 leading-relaxed"></div>
+                    </div>
+                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                        <h2 class="text-xl font-bold text-dark mb-4">Thông số kỹ thuật</h2>
+                        <table class="w-full text-sm">
+                            <tbody id="detail-specs" class="divide-y divide-gray-100"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -248,7 +274,7 @@
                             <form id="checkout-form" class="space-y-4">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div><label class="block text-sm text-gray-600 mb-1">Họ tên</label><input name="receiver_name" id="checkout-name" type="text" required autocomplete="name" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
-                                    <div><label class="block text-sm text-gray-600 mb-1">Số điện thoại</label><input name="phone" id="checkout-phone" type="tel" required pattern="[0-9+() .-]{9,16}" autocomplete="tel" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
+                                    <div><label class="block text-sm text-gray-600 mb-1">Số điện thoại</label><input name="phone" id="checkout-phone" type="tel" required pattern="[0-9+\(\) .\-]{9,16}" autocomplete="tel" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
                                 </div>
                                 <div><label class="block text-sm text-gray-600 mb-1">Địa chỉ chi tiết</label><input name="address" id="checkout-address" type="text" required autocomplete="street-address" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none"></div>
                             </form>
@@ -256,14 +282,43 @@
                         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                             <h3 class="text-xl font-bold mb-4 flex items-center text-dark"><i class="fa-solid fa-credit-card text-primary mr-2"></i> 2. Phương thức thanh toán</h3>
                             <div class="space-y-3">
-                                <label class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 bg-blue-50/50 border-primary">
-                                    <input type="radio" name="payment" value="COD" checked class="w-4 h-4 text-primary focus:ring-primary">
-                                    <span class="ml-3 font-medium">Thanh toán khi nhận hàng (COD)</span>
+                                <label class="payment-option flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="payment" value="COD" checked onchange="updatePaymentUI()" class="w-4 h-4 text-primary focus:ring-primary">
+                                    <i class="fa-solid fa-money-bill-wave text-green-600 ml-3 w-5"></i>
+                                    <span class="ml-2 font-medium">Thanh toán khi nhận hàng (COD)</span>
                                 </label>
-                                <label class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                    <input type="radio" name="payment" value="Chuyển khoản ngân hàng" class="w-4 h-4 text-primary focus:ring-primary">
-                                    <span class="ml-3 font-medium">Chuyển khoản ngân hàng</span>
+                                <label class="payment-option flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="payment" value="BANK" onchange="updatePaymentUI()" class="w-4 h-4 text-primary focus:ring-primary">
+                                    <i class="fa-solid fa-building-columns text-primary ml-3 w-5"></i>
+                                    <span class="ml-2 font-medium">Chuyển khoản ngân hàng</span>
                                 </label>
+
+                                <!-- Chọn ngân hàng: chỉ hiện khi chọn chuyển khoản -->
+                                <div id="bank-picker" class="hidden pt-2">
+                                    <p class="text-sm text-gray-600 mb-3">Chọn ngân hàng bạn muốn chuyển khoản đến:</p>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        <?php foreach (SHOP_BANKS as $code => $bank): ?>
+                                            <label class="bank-option relative flex flex-col items-center justify-center p-3 border-2 rounded-xl cursor-pointer hover:border-primary transition-colors text-center">
+                                                <input type="radio" name="bank" value="<?= $code ?>" onchange="updatePaymentUI()" class="sr-only">
+                                                <span class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold mb-2" style="background: <?= $bank['color'] ?>"><?= htmlspecialchars($code) ?></span>
+                                                <span class="text-sm font-semibold text-dark"><?= htmlspecialchars($bank['name']) ?></span>
+                                                <i class="bank-check fa-solid fa-circle-check text-primary absolute top-2 right-2 hidden"></i>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+
+                                    <div id="bank-info" class="hidden mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100 text-sm">
+                                        <p class="font-semibold text-dark mb-2"><i class="fa-solid fa-circle-info text-primary mr-1"></i> Thông tin chuyển khoản</p>
+                                        <dl class="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1.5">
+                                            <dt class="text-gray-500">Ngân hàng</dt><dd id="bank-info-name" class="font-medium text-dark"></dd>
+                                            <dt class="text-gray-500">Số tài khoản</dt><dd id="bank-info-account" class="font-bold text-dark tracking-wide"></dd>
+                                            <dt class="text-gray-500">Chủ tài khoản</dt><dd id="bank-info-holder" class="font-medium text-dark"></dd>
+                                            <dt class="text-gray-500">Số tiền</dt><dd id="bank-info-amount" class="font-bold text-primary"></dd>
+                                            <dt class="text-gray-500">Nội dung</dt><dd class="font-medium text-dark">Mã đơn hàng (hiện sau khi đặt hàng)</dd>
+                                        </dl>
+                                        <p class="text-xs text-gray-500 mt-3">Đơn hàng được xác nhận sau khi cửa hàng nhận được tiền chuyển khoản.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -106,6 +106,14 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
                     </div>
 
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Thông số chi tiết</label>
+                        <textarea name="specs" rows="5" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm" placeholder="Mỗi dòng một thông số, VD:
+CPU: Intel Core i5-1235U
+RAM: 16GB DDR4
+Màn hình: 14&quot; FHD"></textarea>
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
                         <textarea name="description" rows="3" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Giới thiệu ngắn về sản phẩm"></textarea>
                     </div>
@@ -167,6 +175,14 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Cấu hình</label>
                         <input type="text" name="spec" id="edit_spec" maxlength="255" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Thông số chi tiết</label>
+                        <textarea name="specs" id="edit_specs" rows="5" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm" placeholder="Mỗi dòng một thông số, VD:
+CPU: Intel Core i5-1235U
+RAM: 16GB DDR4
+Màn hình: 14&quot; FHD"></textarea>
                     </div>
 
                     <div>
@@ -299,6 +315,7 @@ $products = $pdo->query($sqlProducts)->fetchAll(PDO::FETCH_ASSOC);
         document.getElementById('edit_price').value = product.price;
         document.getElementById('edit_img').value = product.img;
         document.getElementById('edit_spec').value = product.spec || '';
+        document.getElementById('edit_specs').value = product.specs || '';
         document.getElementById('edit_description').value = product.description || '';
 
         const modal = document.getElementById('edit-product-modal');

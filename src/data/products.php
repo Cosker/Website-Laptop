@@ -6,7 +6,7 @@
  * Quy ước các trường của sản phẩm trả ra cho giao diện:
  *   id, brand (slug của hãng), name, price (VNĐ), stock (tồn kho),
  *   sold (số đã bán, tính từ order_details của các đơn không bị huỷ),
- *   img, spec, desc
+ *   img, spec (cấu hình tóm tắt), specs (bảng thông số chi tiết), desc (mỗi dòng 1 đoạn)
  *
  * Nếu ảnh lỗi, giao diện tự hiện ảnh dự phòng assets/placeholder-laptop.svg.
  */
@@ -36,8 +36,22 @@ function mapProductRow(array $row): array
         'sold' => (int)$row['sold'],
         'img' => $row['img'] ?: 'assets/placeholder-laptop.svg',
         'spec' => $row['spec'] ?? '',
+        'specs' => parseSpecs($row['specs'] ?? ''),
         'desc' => $row['description'] ?? '',
     ];
+}
+
+// Cột specs lưu mỗi dòng "Tên: giá trị" -> mảng [[tên, giá trị], ...] cho bảng thông số
+function parseSpecs(string $text): array
+{
+    $specs = [];
+    foreach (preg_split('/\R/u', $text) as $line) {
+        $parts = explode(':', $line, 2);
+        if (count($parts) === 2 && trim($parts[0]) !== '' && trim($parts[1]) !== '') {
+            $specs[] = [trim($parts[0]), trim($parts[1])];
+        }
+    }
+    return $specs;
 }
 
 const PRODUCT_SELECT_SQL = "SELECT p.*, b.slug AS brand,
